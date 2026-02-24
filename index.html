@@ -341,6 +341,14 @@
         .featured-content p {
             margin-bottom: 15px;
         }
+        .featured-content p:last-child {
+            margin-bottom: 0;
+        }
+        .featured-content br {
+            display: block;
+            content: "";
+            margin-top: 5px;
+        }
         .featured-content a {
             color: #fab005;
             text-decoration: none;
@@ -431,21 +439,29 @@
             font-weight: 500; 
             line-height: 1.4; 
         }
-        .news-item-content .post-content {
+        .news-item-content .post-content-container {
             color: #8a8d91;
             font-size: 0.8rem;
             line-height: 1.5;
             margin: 5px 0;
         }
-        .news-item-content .post-content p {
-            margin-bottom: 8px;
+        .news-item-content p {
+            margin-bottom: 10px;
         }
-        .news-item-content .post-content a {
+        .news-item-content p:last-child {
+            margin-bottom: 0;
+        }
+        .news-item-content br {
+            display: block;
+            content: "";
+            margin-top: 3px;
+        }
+        .news-item-content a {
             color: #fab005;
             text-decoration: none;
             border-bottom: 1px dotted #fab005;
         }
-        .news-item-content .post-content a:hover {
+        .news-item-content a:hover {
             opacity: 0.8;
         }
 
@@ -1282,6 +1298,8 @@
             
             // Wrap each paragraph in <p> tags and handle single line breaks
             return paragraphs.map(paragraph => {
+                if (!paragraph.trim()) return '';
+                
                 // Handle single line breaks within paragraphs
                 const lines = paragraph.split('\n');
                 const formattedLines = lines.map(line => line.trim()).filter(line => line.length > 0);
@@ -1292,6 +1310,23 @@
                 // Join lines with <br> for single line breaks
                 return `<p>${formattedLines.join('<br>')}</p>`;
             }).join('');
+        }
+
+        // Function for truncated preview (keeps paragraph structure but shorter)
+        function truncateContent(text, limit = 150) {
+            if (!text) return '';
+            
+            // First, get plain text without HTML for counting
+            const plainText = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+            
+            if (plainText.length <= limit) {
+                return formatContent(text);
+            }
+            
+            // Find a good breaking point at a word boundary
+            const truncatedPlain = plainText.substring(0, limit).split(' ').slice(0, -1).join(' ') + '...';
+            
+            return `<p>${truncatedPlain}</p>`;
         }
 
         // ============================================
@@ -1697,15 +1732,19 @@
             document.getElementById('popup').classList.add('show');
         }
 
-        function truncateContent(content, limit = 150) {
+        function truncateForPreview(content, limit = 150) {
             if (!content) return '';
-            // First truncate the plain text version for preview
-            const plainText = content.replace(/<[^>]*>/g, '');
-            if (plainText.length <= limit) return formatContent(content);
+            
+            // Get plain text without formatting
+            const plainText = content.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+            
+            if (plainText.length <= limit) {
+                return formatContent(content);
+            }
             
             // Find a good breaking point
             const truncated = plainText.substring(0, limit).split(' ').slice(0, -1).join(' ') + '...';
-            return formatContent(truncated);
+            return `<p>${truncated}</p>`;
         }
 
         window.toggleReadMore = function(postId, isFeatured = false, event) {
@@ -1731,7 +1770,7 @@
                 contentContainer.innerHTML = formatContent(fullContent);
                 readMoreBtn.innerHTML = 'Show less <i class="ph ph-arrow-up"></i>';
             } else {
-                contentContainer.innerHTML = truncateContent(fullContent, isFeatured ? 150 : 100);
+                contentContainer.innerHTML = truncateForPreview(fullContent, isFeatured ? 150 : 100);
                 readMoreBtn.innerHTML = 'Read more <i class="ph ph-arrow-down"></i>';
             }
         };
@@ -2006,7 +2045,7 @@
                         ${featuredContent ? `
                             <div class="featured-content">
                                 <div class="post-content-container" data-full-content="${featuredContent.replace(/"/g, '&quot;')}">
-                                    ${isFeaturedExpanded ? formatContent(featuredContent) : truncateContent(featuredContent, 150)}
+                                    ${isFeaturedExpanded ? formatContent(featuredContent) : truncateForPreview(featuredContent, 150)}
                                 </div>
                                 ${featuredContent.length > 150 ? `
                                     <button class="read-more-btn" onclick="toggleReadMore('${featured.id}', true, event)">
@@ -2064,7 +2103,7 @@
                                 <div class="news-item-title">${post.title}</div>
                                 ${content ? `
                                     <div class="post-content-container" data-full-content="${content.replace(/"/g, '&quot;')}">
-                                        ${isExpanded ? formatContent(content) : truncateContent(content, 100)}
+                                        ${isExpanded ? formatContent(content) : truncateForPreview(content, 100)}
                                     </div>
                                     ${content.length > 100 ? `
                                         <button class="read-more-btn" style="font-size: 0.7rem; padding: 2px 0;" onclick="toggleReadMore('${post.id}', false, event)">
@@ -2126,7 +2165,7 @@
                                 <div class="news-item-title">${post.title}</div>
                                 ${content ? `
                                     <div class="post-content-container" data-full-content="${content.replace(/"/g, '&quot;')}">
-                                        ${isExpanded ? formatContent(content) : truncateContent(content, 100)}
+                                        ${isExpanded ? formatContent(content) : truncateForPreview(content, 100)}
                                     </div>
                                     ${content.length > 100 ? `
                                         <button class="read-more-btn" style="font-size: 0.7rem; padding: 2px 0;" onclick="toggleReadMore('${post.id}', false, event)">
