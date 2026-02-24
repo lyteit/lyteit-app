@@ -931,7 +931,8 @@
             updateDoc,
             query, 
             orderBy,
-            arrayUnion
+            arrayUnion,
+            arrayRemove
         } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { 
             getAuth, 
@@ -957,6 +958,7 @@
 
         let currentUser = null;
         let pendingAction = null;
+        let userLikes = new Map(); // Store which posts the user has liked
 
         const trendingTopics = [
             { topic: "#BitcoinHalving", posts: "2.3K", icon: "ph-lightning" },
@@ -972,9 +974,23 @@
         let searchTerm = '';
 
         // Auth state observer
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             updateUserProfile();
+            
+            if (user) {
+                // Load user's likes when they sign in
+                await loadUserLikes();
+            } else {
+                // Clear likes when user signs out
+                userLikes.clear();
+            }
+            
+            // Reload posts to show correct like states
+            if (allPosts.length > 0) {
+                const filteredPosts = filterPostsBySearch(allPosts, searchTerm);
+                await renderPosts(filteredPosts);
+            }
             
             if (pendingAction && user) {
                 const { type, postId, event } = pendingAction;
@@ -994,6 +1010,27 @@
                 pendingAction = null;
             }
         });
+
+        // Load user's liked posts from all posts
+        async function loadUserLikes() {
+            if (!currentUser) return;
+            
+            try {
+                const q = query(collection(db, 'posts'));
+                const snapshot = await getDocs(q);
+                
+                userLikes.clear();
+                snapshot.forEach(doc => {
+                    const postData = doc.data();
+                    const likedBy = postData.likedBy || [];
+                    if (likedBy.includes(currentUser.uid)) {
+                        userLikes.set(doc.id, true);
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading user likes:', error);
+            }
+        }
 
         function updateUserProfile() {
             const container = document.getElementById('userProfileContainer');
@@ -1142,20 +1179,29 @@
                 
                 const postData = postDoc.data();
                 const likedBy = postData.likedBy || [];
+                const hasLiked = likedBy.includes(currentUser.uid);
                 
-                if (likedBy.includes(currentUser.uid)) {
-                    showPopup('Already Liked', 'You have already liked this post.');
-                    return;
+                let newLikes = postData.likes || 0;
+                
+                if (hasLiked) {
+                    // Unlike
+                    newLikes = Math.max(0, newLikes - 1);
+                    await updateDoc(postRef, {
+                        likes: newLikes,
+                        likedBy: arrayRemove(currentUser.uid)
+                    });
+                    userLikes.set(postId, false);
+                } else {
+                    // Like
+                    newLikes = newLikes + 1;
+                    await updateDoc(postRef, {
+                        likes: newLikes,
+                        likedBy: arrayUnion(currentUser.uid)
+                    });
+                    userLikes.set(postId, true);
                 }
                 
-                const currentLikes = postData.likes || 0;
-                const newLikes = currentLikes + 1;
-                
-                await updateDoc(postRef, {
-                    likes: newLikes,
-                    likedBy: arrayUnion(currentUser.uid)
-                });
-                
+                // Update UI immediately
                 const postElement = document.getElementById(`post-${postId}`);
                 if (!postElement) return;
                 
@@ -1163,13 +1209,17 @@
                 const likeCount = postElement.querySelector('.like-count');
                 
                 if (likeBtn && likeCount) {
-                    likeBtn.classList.add('liked');
+                    if (userLikes.get(postId)) {
+                        likeBtn.classList.add('liked');
+                    } else {
+                        likeBtn.classList.remove('liked');
+                    }
                     likeCount.textContent = newLikes;
                 }
                 
             } catch (error) {
-                console.error('Error liking post:', error);
-                showPopup('Error', 'Failed to like post. Please try again.');
+                console.error('Error toggling like:', error);
+                showPopup('Error', 'Failed to process like. Please try again.');
             }
         }
 
@@ -1379,6 +1429,7 @@
                     : truncateContent(featuredContent, 150);
 
                 const featuredTime = getRelativeTime(featured.createdAt || featured.timestamp);
+                const isFeaturedLiked = userLikes.get(featured.id) || false;
 
                 featuredEl.innerHTML = `
                     <div class="featured-card" id="post-${featured.id}">
@@ -1400,8 +1451,8 @@
                         ` : ''}
                         
                         <div class="interaction-bar">
-                            <div class="interaction-item like-btn" onclick="toggleLike('${featured.id}', event)">
-                                <i class="ph ph-heart"></i>
+                            <div class="interaction-item like-btn ${isFeaturedLiked ? 'liked' : ''}" onclick="toggleLike('${featured.id}', event)">
+                                <i class="ph ${isFeaturedLiked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
                                 <span class="like-count">${featured.likes || 0}</span>
                             </div>
                             <div class="interaction-item" onclick="toggleComments('${featured.id}', event)">
@@ -1438,6 +1489,7 @@
                     const content = post.content || '';
                     const displayContent = isExpanded ? content : truncateContent(content, 100);
                     const postTime = getRelativeTime(post.createdAt || post.timestamp);
+                    const isLiked = userLikes.get(post.id) || false;
 
                     html += `
                         <div class="news-item" id="post-${post.id}">
@@ -1456,8 +1508,8 @@
                                 ` : ''}
                                 
                                 <div class="interaction-bar">
-                                    <div class="interaction-item like-btn" onclick="toggleLike('${post.id}', event)">
-                                        <i class="ph ph-heart"></i>
+                                    <div class="interaction-item like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
+                                        <i class="ph ${isLiked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
                                         <span class="like-count">${post.likes || 0}</span>
                                     </div>
                                     <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
@@ -1500,6 +1552,7 @@
                     const content = post.content || '';
                     const displayContent = isExpanded ? content : truncateContent(content, 100);
                     const postTime = getRelativeTime(post.createdAt || post.timestamp);
+                    const isLiked = userLikes.get(post.id) || false;
 
                     html += `
                         <div class="news-item" id="post-${post.id}">
@@ -1518,8 +1571,8 @@
                                 ` : ''}
                                 
                                 <div class="interaction-bar">
-                                    <div class="interaction-item like-btn" onclick="toggleLike('${post.id}', event)">
-                                        <i class="ph ph-heart"></i>
+                                    <div class="interaction-item like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
+                                        <i class="ph ${isLiked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
                                         <span class="like-count">${post.likes || 0}</span>
                                     </div>
                                     <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
