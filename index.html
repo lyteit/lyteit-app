@@ -335,8 +335,19 @@
         .featured-content {
             color: #8a8d91;
             font-size: 0.95rem;
-            line-height: 1.5;
+            line-height: 1.6;
             margin-top: 10px;
+        }
+        .featured-content p {
+            margin-bottom: 15px;
+        }
+        .featured-content a {
+            color: #fab005;
+            text-decoration: none;
+            border-bottom: 1px dotted #fab005;
+        }
+        .featured-content a:hover {
+            opacity: 0.8;
         }
         .read-more-btn {
             background: none;
@@ -419,6 +430,23 @@
             font-size: 0.9rem; 
             font-weight: 500; 
             line-height: 1.4; 
+        }
+        .news-item-content .post-content {
+            color: #8a8d91;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            margin: 5px 0;
+        }
+        .news-item-content .post-content p {
+            margin-bottom: 8px;
+        }
+        .news-item-content .post-content a {
+            color: #fab005;
+            text-decoration: none;
+            border-bottom: 1px dotted #fab005;
+        }
+        .news-item-content .post-content a:hover {
+            opacity: 0.8;
         }
 
         /* Interaction Bar */
@@ -1222,6 +1250,51 @@
         const COINGECKO_API_KEY = "CG-rq1yZNZZRBHHoX5f2c2mTDPK"; // Your API key
 
         // ============================================
+        // TEXT FORMATTING HELPER FUNCTIONS
+        // ============================================
+        
+        // Function to convert URLs to clickable links
+        function makeLinksClickable(text) {
+            if (!text) return '';
+            
+            // URL regex pattern - matches http, https, www., and domain.com formats
+            const urlPattern = /(\b(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))/gi;
+            
+            return text.replace(urlPattern, function(url) {
+                // Add https:// if no protocol is specified
+                let href = url;
+                if (!href.match(/^https?:\/\//i)) {
+                    href = 'http://' + href;
+                }
+                return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+            });
+        }
+
+        // Function to format text with paragraphs and clickable links
+        function formatContent(text) {
+            if (!text) return '';
+            
+            // First, make links clickable
+            const withLinks = makeLinksClickable(text);
+            
+            // Split by double newlines for paragraphs
+            const paragraphs = withLinks.split(/\n\s*\n/);
+            
+            // Wrap each paragraph in <p> tags and handle single line breaks
+            return paragraphs.map(paragraph => {
+                // Handle single line breaks within paragraphs
+                const lines = paragraph.split('\n');
+                const formattedLines = lines.map(line => line.trim()).filter(line => line.length > 0);
+                
+                if (formattedLines.length === 0) return '';
+                if (formattedLines.length === 1) return `<p>${formattedLines[0]}</p>`;
+                
+                // Join lines with <br> for single line breaks
+                return `<p>${formattedLines.join('<br>')}</p>`;
+            }).join('');
+        }
+
+        // ============================================
         // AUTH STATE OBSERVER
         // ============================================
         onAuthStateChanged(auth, async (user) => {
@@ -1626,8 +1699,13 @@
 
         function truncateContent(content, limit = 150) {
             if (!content) return '';
-            if (content.length <= limit) return content;
-            return content.substring(0, limit) + '...';
+            // First truncate the plain text version for preview
+            const plainText = content.replace(/<[^>]*>/g, '');
+            if (plainText.length <= limit) return formatContent(content);
+            
+            // Find a good breaking point
+            const truncated = plainText.substring(0, limit).split(' ').slice(0, -1).join(' ') + '...';
+            return formatContent(truncated);
         }
 
         window.toggleReadMore = function(postId, isFeatured = false, event) {
@@ -1641,20 +1719,19 @@
             const postElement = document.getElementById(`post-${postId}`);
             if (!postElement) return;
             
-            const contentElement = postElement.querySelector('.post-content');
+            const contentContainer = postElement.querySelector('.post-content-container');
             const readMoreBtn = postElement.querySelector('.read-more-btn');
             
-            if (!contentElement || !readMoreBtn) return;
+            if (!contentContainer || !readMoreBtn) return;
             
-            const fullContent = contentElement.getAttribute('data-full-content');
+            const fullContent = contentContainer.getAttribute('data-full-content');
             const isExpanded = expandedPosts.get(postId);
-            const limit = isFeatured ? 150 : 100;
             
             if (isExpanded) {
-                contentElement.textContent = fullContent;
+                contentContainer.innerHTML = formatContent(fullContent);
                 readMoreBtn.innerHTML = 'Show less <i class="ph ph-arrow-up"></i>';
             } else {
-                contentElement.textContent = truncateContent(fullContent, limit);
+                contentContainer.innerHTML = truncateContent(fullContent, isFeatured ? 150 : 100);
                 readMoreBtn.innerHTML = 'Read more <i class="ph ph-arrow-down"></i>';
             }
         };
@@ -1916,10 +1993,6 @@
 
                 const isFeaturedExpanded = expandedPosts.get(featured.id) || false;
                 const featuredContent = featured.content || '';
-                const displayFeaturedContent = isFeaturedExpanded 
-                    ? featuredContent 
-                    : truncateContent(featuredContent, 150);
-
                 const featuredTime = getRelativeTime(featured.createdAt || featured.timestamp);
                 const isFeaturedLiked = userLikes.get(featured.id) || false;
 
@@ -1932,7 +2005,9 @@
                         </div>
                         ${featuredContent ? `
                             <div class="featured-content">
-                                <span class="post-content" data-full-content="${featuredContent.replace(/"/g, '&quot;')}">${displayFeaturedContent}</span>
+                                <div class="post-content-container" data-full-content="${featuredContent.replace(/"/g, '&quot;')}">
+                                    ${isFeaturedExpanded ? formatContent(featuredContent) : truncateContent(featuredContent, 150)}
+                                </div>
                                 ${featuredContent.length > 150 ? `
                                     <button class="read-more-btn" onclick="toggleReadMore('${featured.id}', true, event)">
                                         ${isFeaturedExpanded ? 'Show less' : 'Read more'} 
@@ -1979,7 +2054,6 @@
                 for (const post of otherPosts) {
                     const isExpanded = expandedPosts.get(post.id) || false;
                     const content = post.content || '';
-                    const displayContent = isExpanded ? content : truncateContent(content, 100);
                     const postTime = getRelativeTime(post.createdAt || post.timestamp);
                     const isLiked = userLikes.get(post.id) || false;
 
@@ -1989,14 +2063,14 @@
                             <div class="news-item-content">
                                 <div class="news-item-title">${post.title}</div>
                                 ${content ? `
-                                    <div style="color: #8a8d91; font-size: 0.8rem; margin: 5px 0;">
-                                        <span class="post-content" data-full-content="${content.replace(/"/g, '&quot;')}">${displayContent}</span>
-                                        ${content.length > 100 ? `
-                                            <button class="read-more-btn" style="font-size: 0.7rem; padding: 2px 0;" onclick="toggleReadMore('${post.id}', false, event)">
-                                                ${isExpanded ? 'less' : 'more'}
-                                            </button>
-                                        ` : ''}
+                                    <div class="post-content-container" data-full-content="${content.replace(/"/g, '&quot;')}">
+                                        ${isExpanded ? formatContent(content) : truncateContent(content, 100)}
                                     </div>
+                                    ${content.length > 100 ? `
+                                        <button class="read-more-btn" style="font-size: 0.7rem; padding: 2px 0;" onclick="toggleReadMore('${post.id}', false, event)">
+                                            ${isExpanded ? 'less' : 'more'}
+                                        </button>
+                                    ` : ''}
                                 ` : ''}
                                 
                                 <div class="interaction-bar">
@@ -2042,7 +2116,6 @@
                 for (const post of postsToRender) {
                     const isExpanded = expandedPosts.get(post.id) || false;
                     const content = post.content || '';
-                    const displayContent = isExpanded ? content : truncateContent(content, 100);
                     const postTime = getRelativeTime(post.createdAt || post.timestamp);
                     const isLiked = userLikes.get(post.id) || false;
 
@@ -2052,14 +2125,14 @@
                             <div class="news-item-content">
                                 <div class="news-item-title">${post.title}</div>
                                 ${content ? `
-                                    <div style="color: #8a8d91; font-size: 0.8rem; margin: 5px 0;">
-                                        <span class="post-content" data-full-content="${content.replace(/"/g, '&quot;')}">${displayContent}</span>
-                                        ${content.length > 100 ? `
-                                            <button class="read-more-btn" style="font-size: 0.7rem; padding: 2px 0;" onclick="toggleReadMore('${post.id}', false, event)">
-                                                ${isExpanded ? 'less' : 'more'}
-                                            </button>
-                                        ` : ''}
+                                    <div class="post-content-container" data-full-content="${content.replace(/"/g, '&quot;')}">
+                                        ${isExpanded ? formatContent(content) : truncateContent(content, 100)}
                                     </div>
+                                    ${content.length > 100 ? `
+                                        <button class="read-more-btn" style="font-size: 0.7rem; padding: 2px 0;" onclick="toggleReadMore('${post.id}', false, event)">
+                                            ${isExpanded ? 'less' : 'more'}
+                                        </button>
+                                    ` : ''}
                                 ` : ''}
                                 
                                 <div class="interaction-bar">
