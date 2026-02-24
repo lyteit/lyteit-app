@@ -82,6 +82,7 @@
         }
 
         .user-profile {
+            position: relative;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -90,9 +91,11 @@
             border-radius: 30px;
             background: #1c1f24;
             border: 1px solid #333;
+            transition: all 0.2s ease;
         }
         .user-profile:hover {
             border-color: #fab005;
+            background: #2a2f38;
         }
         .user-avatar {
             width: 30px;
@@ -104,6 +107,7 @@
             justify-content: center;
             color: #000;
             font-weight: 600;
+            object-fit: cover;
         }
         .user-name {
             font-size: 0.8rem;
@@ -113,6 +117,46 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+        .user-dropdown {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background: #1c1f24;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 10px 0;
+            min-width: 150px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .user-profile:hover .user-dropdown {
+            display: block;
+        }
+        .dropdown-item {
+            padding: 10px 20px;
+            color: #fff;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+        .dropdown-item:hover {
+            background: #2a2f38;
+            color: #fab005;
+        }
+        .dropdown-item i {
+            font-size: 1rem;
+            color: #fab005;
+        }
+        .dropdown-divider {
+            height: 1px;
+            background: #333;
+            margin: 8px 0;
+        }
+
         .sign-in-btn {
             background: #fab005;
             color: #000;
@@ -125,6 +169,7 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            transition: opacity 0.2s ease;
         }
         .sign-in-btn:hover {
             opacity: 0.9;
@@ -911,7 +956,7 @@
         const provider = new GoogleAuthProvider();
 
         let currentUser = null;
-        let pendingAction = null; // Store action that triggered sign-in
+        let pendingAction = null;
 
         const trendingTopics = [
             { topic: "#BitcoinHalving", posts: "2.3K", icon: "ph-lightning" },
@@ -931,13 +976,11 @@
             currentUser = user;
             updateUserProfile();
             
-            // If there was a pending action, execute it
             if (pendingAction && user) {
                 const { type, postId, event } = pendingAction;
                 if (type === 'like') {
                     handleLike(postId, event);
                 } else if (type === 'comment') {
-                    // Focus on comment input
                     setTimeout(() => {
                         const postElement = document.getElementById(`post-${postId}`);
                         if (postElement) {
@@ -957,15 +1000,32 @@
             if (currentUser) {
                 const photoURL = currentUser.photoURL;
                 const displayName = currentUser.displayName || 'User';
+                const email = currentUser.email || '';
                 const initial = displayName.charAt(0).toUpperCase();
                 
                 container.innerHTML = `
-                    <div class="user-profile" onclick="toggleSignOut()">
+                    <div class="user-profile">
                         ${photoURL ? 
                             `<img src="${photoURL}" class="user-avatar" style="object-fit: cover;">` : 
                             `<div class="user-avatar">${initial}</div>`
                         }
                         <span class="user-name">${displayName.split(' ')[0]}</span>
+                        
+                        <div class="user-dropdown">
+                            <div class="dropdown-item">
+                                <i class="ph ph-user-circle"></i>
+                                ${displayName}
+                            </div>
+                            <div class="dropdown-item">
+                                <i class="ph ph-envelope"></i>
+                                ${email}
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-item" onclick="handleSignOut()">
+                                <i class="ph ph-sign-out"></i>
+                                Sign Out
+                            </div>
+                        </div>
                     </div>
                 `;
             } else {
@@ -981,27 +1041,20 @@
         window.signInWithGoogle = async function() {
             try {
                 await signInWithPopup(auth, provider);
+                showPopup('Welcome!', 'You have successfully signed in.');
             } catch (error) {
                 console.error('Sign-in error:', error);
                 showPopup('Error', 'Failed to sign in. Please try again.');
             }
         };
 
-        window.signOut = async function() {
+        window.handleSignOut = async function() {
             try {
                 await signOut(auth);
                 showPopup('Signed Out', 'You have been signed out successfully.');
             } catch (error) {
                 console.error('Sign-out error:', error);
-            }
-        };
-
-        window.toggleSignOut = function() {
-            if (!currentUser) return;
-            
-            const signOutConfirm = confirm('Sign out from Google?');
-            if (signOutConfirm) {
-                signOut();
+                showPopup('Error', 'Failed to sign out.');
             }
         };
 
