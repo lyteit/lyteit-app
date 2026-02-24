@@ -1239,15 +1239,18 @@
         let allPosts = [];
         let searchTerm = '';
         
-        // Lazy loading states - FIXED
-        let displayedPosts = []; // Posts currently shown in the news list
-        let currentDisplayCount = 0; // How many posts are currently displayed
-        const POSTS_PER_BATCH = 3; // Load 3 posts at a time
-        let featuredPost = null; // Store the featured post
+        // Lazy loading states
+        let displayedPosts = [];
+        let currentDisplayCount = 0;
+        const POSTS_PER_BATCH = 3;
+        let featuredPost = null;
 
         // Comment lazy loading states
-        const commentStates = new Map(); // Store per-post comment pagination
-        const COMMENTS_PER_BATCH = 5; // Load 5 comments at a time
+        const commentStates = new Map();
+        const COMMENTS_PER_BATCH = 5;
+
+        // Search mode flag
+        let isSearching = false;
 
         // ============================================
         // TRENDING TOPICS (Static for now)
@@ -1426,7 +1429,13 @@
             });
             document.getElementById(`nav-${page}`)?.classList.add('active');
             
-            // Reset lazy loading states when navigating
+            // Reset states
+            isSearching = false;
+            searchTerm = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResultsHeader').style.display = 'none';
+            
+            // Reset lazy loading states
             displayedPosts = [];
             currentDisplayCount = 0;
             featuredPost = null;
@@ -1467,7 +1476,7 @@
         }
 
         // ============================================
-        // HOME PAGE WITH LAZY LOADING - FIXED
+        // HOME PAGE WITH LAZY LOADING
         // ============================================
         function getHomePageHTML() {
             return `
@@ -1529,8 +1538,10 @@
             }
         }
 
-        // Load more posts - FIXED
+        // Load more posts
         window.loadMorePosts = async function(reset = false) {
+            if (isSearching) return; // Don't load more when searching
+            
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             const newsListEl = document.getElementById('newsList');
             
@@ -1726,7 +1737,125 @@
         }
 
         // ============================================
-        // COMMENT LAZY LOADING FUNCTIONS - FIXED
+        // SEARCH FUNCTIONALITY - FIXED
+        // ============================================
+        async function performSearch(term) {
+            if (!term) {
+                // Clear search
+                isSearching = false;
+                document.getElementById('searchResultsHeader').style.display = 'none';
+                document.getElementById('featuredSection').style.display = 'block';
+                document.getElementById('loadMoreContainer').style.display = 'flex';
+                await loadHomePage();
+                return;
+            }
+
+            isSearching = true;
+            const lowerTerm = term.toLowerCase();
+            
+            // Filter all posts by search term
+            const filteredPosts = allPosts.filter(post => 
+                post.title.toLowerCase().includes(lowerTerm) || 
+                (post.content && post.content.toLowerCase().includes(lowerTerm))
+            );
+
+            // Hide featured section and load more button during search
+            document.getElementById('featuredSection').style.display = 'none';
+            document.getElementById('loadMoreContainer').style.display = 'none';
+            
+            // Show search results header
+            const searchHeader = document.getElementById('searchResultsHeader');
+            searchHeader.style.display = 'block';
+            searchHeader.innerHTML = `
+                Found ${filteredPosts.length} result${filteredPosts.length > 1 ? 's' : ''} for "${term}"
+                <span class="clear-search" onclick="clearSearch()">Clear search</span>
+            `;
+
+            // Render search results
+            const newsListEl = document.getElementById('newsList');
+            
+            if (filteredPosts.length === 0) {
+                newsListEl.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: #8a8d91;">
+                        <i class="ph ph-magnifying-glass" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                        <p>No news found matching "${term}"</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            for (const post of filteredPosts) {
+                const isExpanded = expandedPosts.get(post.id) || false;
+                const content = post.content || '';
+                const postTime = getRelativeTime(post.createdAt || post.timestamp);
+                const isLiked = userLikes.get(post.id) || false;
+
+                html += `
+                    <div class="news-item" id="post-${post.id}">
+                        <img src="${post.image}" class="news-item-img" onerror="this.src='https://images.unsplash.com/photo-1621761126064-fdd80772bc22?auto=format&fit=crop&q=60&w=200'">
+                        <div class="news-item-content">
+                            <div class="news-item-title">${post.title}</div>
+                            ${content ? `
+                                <div class="post-content-container" data-full-content="${content.replace(/"/g, '&quot;')}">
+                                    ${isExpanded ? formatContent(content) : truncateForPreview(content, 100)}
+                                </div>
+                                ${content.length > 100 ? `
+                                    <button class="read-more-btn" style="font-size: 0.7rem; padding: 2px 0;" onclick="toggleReadMore('${post.id}', false, event)">
+                                        ${isExpanded ? 'less' : 'more'}
+                                    </button>
+                                ` : ''}
+                            ` : ''}
+                            
+                            <div class="interaction-bar">
+                                <div class="interaction-item like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
+                                    <i class="ph ${isLiked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
+                                    <span class="like-count">${post.likes || 0}</span>
+                                </div>
+                                <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
+                                    <i class="ph ph-chat-circle"></i>
+                                    <span id="comment-count-${post.id}">${post.comments?.length || 0}</span>
+                                </div>
+                            </div>
+
+                            <div class="comments-section" id="comments-${post.id}" style="display: none;">
+                                <div class="comment-input-area">
+                                    <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${post.id}')">
+                                    <span class="comment-char-count">150/150</span>
+                                    <button class="comment-submit" onclick="addComment('${post.id}', event)" disabled>Post</button>
+                                </div>
+                                <div class="comments-list" id="comments-list-${post.id}">
+                                    <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
+                                </div>
+                                <div class="load-more-comments" id="load-more-comments-${post.id}" style="display: none;" onclick="loadMoreComments('${post.id}')">
+                                    <i class="ph ph-arrow-down"></i> Load more comments
+                                </div>
+                            </div>
+
+                            <div class="meta-info">
+                                <span><i class="ph ph-clock"></i> ${postTime}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            newsListEl.innerHTML = html;
+
+            // Load comments for each post in search results
+            for (const post of filteredPosts) {
+                await loadPostComments(post.id, true);
+            }
+        }
+
+        window.clearSearch = function() {
+            searchTerm = '';
+            document.getElementById('searchInput').value = '';
+            performSearch('');
+        };
+
+        // ============================================
+        // COMMENT LAZY LOADING FUNCTIONS
         // ============================================
         async function loadPostComments(postId, reset = false) {
             try {
@@ -1998,7 +2127,7 @@
         }
 
         // ============================================
-        // NEWS FUNCTIONS (Keep existing)
+        // NEWS FUNCTIONS
         // ============================================
         const expandedPosts = new Map();
 
@@ -2327,39 +2456,18 @@
             }
         };
 
-        function filterPostsBySearch(posts, term) {
-            if (!term) return posts;
-            const lowerTerm = term.toLowerCase();
-            return posts.filter(post => 
-                post.title.toLowerCase().includes(lowerTerm) || 
-                (post.content && post.content.toLowerCase().includes(lowerTerm))
-            );
-        }
-
-        window.clearSearch = function() {
-            searchTerm = '';
-            document.getElementById('searchInput').value = '';
-            loadPosts();
-        };
-
         function renderTrending() {
             const trendingEl = document.getElementById('trendingTopics');
             if (!trendingEl) return;
             
             trendingEl.innerHTML = trendingTopics.map(item => `
-                <div class="trending-item" onclick="document.getElementById('searchInput').value='${item.topic}'; searchPosts('${item.topic}')">
+                <div class="trending-item" onclick="document.getElementById('searchInput').value='${item.topic}'; performSearch('${item.topic}')">
                     <i class="ph ${item.icon}"></i>
                     <span>${item.topic}</span>
                     <span class="trending-count">• ${item.posts}</span>
                 </div>
             `).join('');
         }
-
-        window.searchPosts = function(term) {
-            searchTerm = term;
-            const filteredPosts = filterPostsBySearch(allPosts, searchTerm);
-            renderPosts(filteredPosts);
-        };
 
         function setupEventListeners() {
             document.getElementById('backToTop')?.addEventListener('click', () => {
@@ -2401,9 +2509,8 @@
             if (searchInput) {
                 searchInput.addEventListener('input', (e) => {
                     if (currentPage === 'home') {
-                        searchTerm = e.target.value.toLowerCase().trim();
-                        const filteredPosts = filterPostsBySearch(allPosts, searchTerm);
-                        // Handle search display
+                        const term = e.target.value.toLowerCase().trim();
+                        performSearch(term);
                     }
                 });
             }
