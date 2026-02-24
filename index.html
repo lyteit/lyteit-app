@@ -1202,9 +1202,7 @@
             query, 
             orderBy,
             arrayUnion,
-            arrayRemove,
-            limit,
-            startAfter
+            arrayRemove
         } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { 
             getAuth, 
@@ -1241,15 +1239,15 @@
         let allPosts = [];
         let searchTerm = '';
         
-        // Lazy loading states
-        let lastVisiblePost = null;
-        let postsPerPage = 5; // Initial 5 posts (excluding featured)
-        let isLoadingMore = false;
-        let hasMorePosts = true;
-        let allPostsLoaded = []; // Store all posts for reference
+        // Lazy loading states - FIXED
+        let displayedPosts = []; // Posts currently shown in the news list
+        let currentDisplayCount = 0; // How many posts are currently displayed
+        const POSTS_PER_BATCH = 3; // Load 3 posts at a time
+        let featuredPost = null; // Store the featured post
 
         // Comment lazy loading states
         const commentStates = new Map(); // Store per-post comment pagination
+        const COMMENTS_PER_BATCH = 5; // Load 5 comments at a time
 
         // ============================================
         // TRENDING TOPICS (Static for now)
@@ -1429,9 +1427,9 @@
             document.getElementById(`nav-${page}`)?.classList.add('active');
             
             // Reset lazy loading states when navigating
-            lastVisiblePost = null;
-            hasMorePosts = true;
-            allPostsLoaded = [];
+            displayedPosts = [];
+            currentDisplayCount = 0;
+            featuredPost = null;
             
             // Load page content
             loadPage(page);
@@ -1469,7 +1467,7 @@
         }
 
         // ============================================
-        // HOME PAGE WITH LAZY LOADING
+        // HOME PAGE WITH LAZY LOADING - FIXED
         // ============================================
         function getHomePageHTML() {
             return `
@@ -1489,13 +1487,8 @@
         }
 
         async function loadHomePage() {
-            await loadInitialPosts();
-        }
-
-        // Load initial 5 posts (excluding featured)
-        async function loadInitialPosts() {
             try {
-                // Get all posts first to pick featured randomly
+                // Get all posts first
                 const allPostsQuery = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
                 const allSnapshot = await getDocs(allPostsQuery);
                 
@@ -1512,20 +1505,22 @@
 
                 // Pick featured post randomly from all posts
                 const featuredPosts = allPosts.filter(post => post.featured === true);
-                let featured;
                 if (featuredPosts.length > 0) {
-                    featured = featuredPosts[Math.floor(Math.random() * featuredPosts.length)];
+                    featuredPost = featuredPosts[Math.floor(Math.random() * featuredPosts.length)];
                 } else {
-                    featured = allPosts[Math.floor(Math.random() * allPosts.length)];
+                    featuredPost = allPosts[Math.floor(Math.random() * allPosts.length)];
                 }
 
                 // Store all posts except featured
-                allPostsLoaded = allPosts.filter(post => post.id !== featured.id);
+                displayedPosts = allPosts.filter(post => post.id !== featuredPost.id);
+                
+                // Reset display count
+                currentDisplayCount = 0;
                 
                 // Render featured post
-                await renderFeaturedPost(featured);
+                await renderFeaturedPost(featuredPost);
                 
-                // Load first batch of posts (5)
+                // Load first batch of posts
                 await loadMorePosts(true);
                 
             } catch (error) {
@@ -1534,43 +1529,118 @@
             }
         }
 
-        // Load more posts (called by View More button)
+        // Load more posts - FIXED
         window.loadMorePosts = async function(reset = false) {
-            if (isLoadingMore) return;
-            if (!hasMorePosts && !reset) return;
-            
-            isLoadingMore = true;
             const loadMoreBtn = document.getElementById('loadMoreBtn');
+            const newsListEl = document.getElementById('newsList');
+            
+            if (!newsListEl) return;
+            
+            // Show loading state
             if (loadMoreBtn) {
                 loadMoreBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Loading...';
                 loadMoreBtn.disabled = true;
             }
             
             try {
-                const startIndex = reset ? 0 : allPostsLoaded.length;
-                const endIndex = startIndex + postsPerPage;
-                const postsToShow = allPostsLoaded.slice(startIndex, endIndex);
+                // Calculate how many more to show
+                const startIndex = reset ? 0 : currentDisplayCount;
+                const endIndex = startIndex + POSTS_PER_BATCH;
+                const postsToShow = displayedPosts.slice(startIndex, endIndex);
                 
                 if (postsToShow.length === 0) {
-                    hasMorePosts = false;
+                    // No more posts
                     document.getElementById('loadMoreContainer').style.display = 'none';
                     return;
                 }
                 
-                // Check if there are more posts after this batch
-                hasMorePosts = endIndex < allPostsLoaded.length;
+                // Update display count
+                currentDisplayCount = endIndex;
                 
-                // Render the posts
-                await renderPostsBatch(postsToShow, reset);
+                // Generate HTML for new posts
+                let html = reset ? '' : newsListEl.innerHTML;
+                
+                for (const post of postsToShow) {
+                    const isExpanded = expandedPosts.get(post.id) || false;
+                    const content = post.content || '';
+                    const postTime = getRelativeTime(post.createdAt || post.timestamp);
+                    const isLiked = userLikes.get(post.id) || false;
+
+                    // Initialize comment state for this post
+                    if (!commentStates.has(post.id)) {
+                        commentStates.set(post.id, {
+                            comments: post.comments || [],
+                            displayedCount: 0,
+                            hasMore: (post.comments || []).length > COMMENTS_PER_BATCH
+                        });
+                    }
+
+                    html += `
+                        <div class="news-item" id="post-${post.id}">
+                            <img src="${post.image}" class="news-item-img" onerror="this.src='https://images.unsplash.com/photo-1621761126064-fdd80772bc22?auto=format&fit=crop&q=60&w=200'">
+                            <div class="news-item-content">
+                                <div class="news-item-title">${post.title}</div>
+                                ${content ? `
+                                    <div class="post-content-container" data-full-content="${content.replace(/"/g, '&quot;')}">
+                                        ${isExpanded ? formatContent(content) : truncateForPreview(content, 100)}
+                                    </div>
+                                    ${content.length > 100 ? `
+                                        <button class="read-more-btn" style="font-size: 0.7rem; padding: 2px 0;" onclick="toggleReadMore('${post.id}', false, event)">
+                                            ${isExpanded ? 'less' : 'more'}
+                                        </button>
+                                    ` : ''}
+                                ` : ''}
+                                
+                                <div class="interaction-bar">
+                                    <div class="interaction-item like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
+                                        <i class="ph ${isLiked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
+                                        <span class="like-count">${post.likes || 0}</span>
+                                    </div>
+                                    <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
+                                        <i class="ph ph-chat-circle"></i>
+                                        <span id="comment-count-${post.id}">${post.comments?.length || 0}</span>
+                                    </div>
+                                </div>
+
+                                <div class="comments-section" id="comments-${post.id}" style="display: none;">
+                                    <div class="comment-input-area">
+                                        <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${post.id}')">
+                                        <span class="comment-char-count">150/150</span>
+                                        <button class="comment-submit" onclick="addComment('${post.id}', event)" disabled>Post</button>
+                                    </div>
+                                    <div class="comments-list" id="comments-list-${post.id}">
+                                        <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
+                                    </div>
+                                    <div class="load-more-comments" id="load-more-comments-${post.id}" style="display: none;" onclick="loadMoreComments('${post.id}')">
+                                        <i class="ph ph-arrow-down"></i> Load more comments
+                                    </div>
+                                </div>
+
+                                <div class="meta-info">
+                                    <span><i class="ph ph-clock"></i> ${postTime}</span>
+                                </div>
+                                ${post.featured ? '<span style="background: #fab00520; color: #fab005; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem;">Featured</span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                newsListEl.innerHTML = html;
+
+                // Load comments for each new post
+                for (const post of postsToShow) {
+                    await loadPostComments(post.id, true);
+                }
                 
                 // Update load more button
                 if (loadMoreBtn) {
-                    if (hasMorePosts) {
-                        loadMoreBtn.innerHTML = '<i class="ph ph-arrow-down"></i> View More';
-                        loadMoreBtn.disabled = false;
-                    } else {
+                    if (currentDisplayCount >= displayedPosts.length) {
+                        // No more posts to load
                         loadMoreBtn.innerHTML = '<i class="ph ph-check-circle"></i> All Posts Loaded';
                         loadMoreBtn.disabled = true;
+                    } else {
+                        loadMoreBtn.innerHTML = '<i class="ph ph-arrow-down"></i> View More';
+                        loadMoreBtn.disabled = false;
                     }
                 }
                 
@@ -1580,8 +1650,6 @@
                     loadMoreBtn.innerHTML = '<i class="ph ph-arrow-down"></i> Try Again';
                     loadMoreBtn.disabled = false;
                 }
-            } finally {
-                isLoadingMore = false;
             }
         };
 
@@ -1644,100 +1712,21 @@
                 </div>
             `;
 
-            // Initialize comment state for this post
+            // Initialize comment state for featured post
             if (!commentStates.has(featured.id)) {
                 commentStates.set(featured.id, {
                     comments: featured.comments || [],
                     displayedCount: 0,
-                    hasMore: (featured.comments || []).length > 5
+                    hasMore: (featured.comments || []).length > COMMENTS_PER_BATCH
                 });
             }
 
-            // Load first batch of comments (5)
+            // Load first batch of comments
             await loadPostComments(featured.id, true);
         }
 
-        async function renderPostsBatch(posts, reset = false) {
-            const newsListEl = document.getElementById('newsList');
-            if (!newsListEl) return;
-
-            let html = reset ? '' : newsListEl.innerHTML;
-
-            for (const post of posts) {
-                const isExpanded = expandedPosts.get(post.id) || false;
-                const content = post.content || '';
-                const postTime = getRelativeTime(post.createdAt || post.timestamp);
-                const isLiked = userLikes.get(post.id) || false;
-
-                // Initialize comment state for this post
-                if (!commentStates.has(post.id)) {
-                    commentStates.set(post.id, {
-                        comments: post.comments || [],
-                        displayedCount: 0,
-                        hasMore: (post.comments || []).length > 5
-                    });
-                }
-
-                html += `
-                    <div class="news-item" id="post-${post.id}">
-                        <img src="${post.image}" class="news-item-img" onerror="this.src='https://images.unsplash.com/photo-1621761126064-fdd80772bc22?auto=format&fit=crop&q=60&w=200'">
-                        <div class="news-item-content">
-                            <div class="news-item-title">${post.title}</div>
-                            ${content ? `
-                                <div class="post-content-container" data-full-content="${content.replace(/"/g, '&quot;')}">
-                                    ${isExpanded ? formatContent(content) : truncateForPreview(content, 100)}
-                                </div>
-                                ${content.length > 100 ? `
-                                    <button class="read-more-btn" style="font-size: 0.7rem; padding: 2px 0;" onclick="toggleReadMore('${post.id}', false, event)">
-                                        ${isExpanded ? 'less' : 'more'}
-                                    </button>
-                                ` : ''}
-                            ` : ''}
-                            
-                            <div class="interaction-bar">
-                                <div class="interaction-item like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
-                                    <i class="ph ${isLiked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
-                                    <span class="like-count">${post.likes || 0}</span>
-                                </div>
-                                <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
-                                    <i class="ph ph-chat-circle"></i>
-                                    <span id="comment-count-${post.id}">${post.comments?.length || 0}</span>
-                                </div>
-                            </div>
-
-                            <div class="comments-section" id="comments-${post.id}" style="display: none;">
-                                <div class="comment-input-area">
-                                    <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${post.id}')">
-                                    <span class="comment-char-count">150/150</span>
-                                    <button class="comment-submit" onclick="addComment('${post.id}', event)" disabled>Post</button>
-                                </div>
-                                <div class="comments-list" id="comments-list-${post.id}">
-                                    <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
-                                </div>
-                                <div class="load-more-comments" id="load-more-comments-${post.id}" style="display: none;" onclick="loadMoreComments('${post.id}')">
-                                    <i class="ph ph-arrow-down"></i> Load more comments
-                                </div>
-                            </div>
-
-                            <div class="meta-info">
-                                <span><i class="ph ph-clock"></i> ${postTime}</span>
-                            </div>
-                            ${post.featured ? '<span style="background: #fab00520; color: #fab005; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem;">Featured</span>' : ''}
-                        </div>
-                    </div>
-                `;
-            }
-
-            newsListEl.innerHTML = html;
-
-            // Load comments for each post
-            for (const post of posts) {
-                await loadPostComments(post.id, true);
-            }
-        }
-
         // ============================================
-        // COMMENT LAZY LOADING FUNCTIONS
+        // COMMENT LAZY LOADING FUNCTIONS - FIXED
         // ============================================
         async function loadPostComments(postId, reset = false) {
             try {
@@ -1748,26 +1737,32 @@
                 
                 const allComments = postDoc.data().comments || [];
                 
-                // Update comment state
-                const state = commentStates.get(postId) || {
-                    comments: allComments,
-                    displayedCount: 0,
-                    hasMore: allComments.length > 5
-                };
-                
                 // Sort comments by timestamp (newest first)
                 const sortedComments = allComments.sort((a, b) => 
                     new Date(b.timestamp) - new Date(a.timestamp)
                 );
                 
-                state.comments = sortedComments;
+                // Get or create comment state
+                let state = commentStates.get(postId);
+                if (!state) {
+                    state = {
+                        comments: sortedComments,
+                        displayedCount: 0,
+                        hasMore: sortedComments.length > COMMENTS_PER_BATCH
+                    };
+                    commentStates.set(postId, state);
+                } else {
+                    state.comments = sortedComments;
+                }
                 
-                // Determine how many to show (5 initially, then 5 more each time)
-                const displayCount = reset ? 5 : Math.min(state.displayedCount + 5, state.comments.length);
-                state.displayedCount = displayCount;
-                state.hasMore = displayCount < state.comments.length;
+                // Determine how many to show
+                if (reset) {
+                    state.displayedCount = COMMENTS_PER_BATCH;
+                } else {
+                    state.displayedCount = Math.min(state.displayedCount + COMMENTS_PER_BATCH, state.comments.length);
+                }
                 
-                commentStates.set(postId, state);
+                state.hasMore = state.displayedCount < state.comments.length;
                 
                 // Update UI
                 const commentsList = document.getElementById(`comments-list-${postId}`);
@@ -2300,7 +2295,7 @@
                 commentStates.set(postId, {
                     comments: updatedComments,
                     displayedCount: 0,
-                    hasMore: updatedComments.length > 5
+                    hasMore: updatedComments.length > COMMENTS_PER_BATCH
                 });
                 await loadPostComments(postId, true);
                 
@@ -2408,7 +2403,7 @@
                     if (currentPage === 'home') {
                         searchTerm = e.target.value.toLowerCase().trim();
                         const filteredPosts = filterPostsBySearch(allPosts, searchTerm);
-                        renderPosts(filteredPosts);
+                        // Handle search display
                     }
                 });
             }
