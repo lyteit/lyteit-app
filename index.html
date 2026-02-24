@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>lyteit.com - Crypto News</title>
+    <title>lyteit.com - Financial & Crypto News</title>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Chart.js for simple charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -1067,11 +1067,6 @@
         .nav-center:hover {
             transform: scale(1.05);
         }
-
-        /* Hide elements based on page */
-        .home-only { display: block; }
-        .explore-only { display: none; }
-        .markets-only { display: none; }
     </style>
 </head>
 <body>
@@ -1197,6 +1192,9 @@
         </nav>
     </div>
 
+    <!-- Jotform AI Chatbot -->
+    <script src='https://cdn.jotfor.ms/agent/embedjs/019c905c4c0c792b87d26b18bd0154e1faf8/embed.js'></script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
         import { 
@@ -1272,9 +1270,10 @@
         ];
 
         // ============================================
-        // EXPLORE PAGE DATA (Crypto Resources)
+        // EXPLORE PAGE DATA (Financial & Crypto Resources)
         // ============================================
         const exploreResources = [
+            // News & Media
             {
                 name: "CoinTelegraph",
                 description: "Breaking news, expert analysis, and in-depth features on cryptocurrency and blockchain technology.",
@@ -1290,6 +1289,28 @@
                 icon: "ph-newspaper"
             },
             {
+                name: "Bloomberg",
+                description: "Global financial markets news, data, and analysis.",
+                url: "https://bloomberg.com",
+                category: "News",
+                icon: "ph-newspaper"
+            },
+            {
+                name: "Reuters",
+                description: "International financial news and market updates.",
+                url: "https://reuters.com",
+                category: "News",
+                icon: "ph-newspaper"
+            },
+            {
+                name: "Financial Times",
+                description: "In-depth financial analysis and global business news.",
+                url: "https://ft.com",
+                category: "News",
+                icon: "ph-newspaper"
+            },
+            // Data & Analysis
+            {
                 name: "CoinMarketCap",
                 description: "Live cryptocurrency prices, charts, and market data. Track top coins by market cap.",
                 url: "https://coinmarketcap.com",
@@ -1302,6 +1323,28 @@
                 url: "https://coingecko.com",
                 category: "Data",
                 icon: "ph-chart-line"
+            },
+            {
+                name: "TradingView",
+                description: "Advanced charts and technical analysis for financial markets.",
+                url: "https://tradingview.com",
+                category: "Data",
+                icon: "ph-chart-line"
+            },
+            {
+                name: "Yahoo Finance",
+                description: "Stock market data, news, and financial information.",
+                url: "https://finance.yahoo.com",
+                category: "Data",
+                icon: "ph-chart-line"
+            },
+            // Education
+            {
+                name: "Investopedia",
+                description: "Financial education - learn about investing, markets, and terminology.",
+                url: "https://investopedia.com",
+                category: "Education",
+                icon: "ph-book-open"
             },
             {
                 name: "Bitcoin.org",
@@ -1317,6 +1360,7 @@
                 category: "Education",
                 icon: "ph-book-open"
             },
+            // Video & Podcasts
             {
                 name: "CoinBureau (YouTube)",
                 description: "In-depth crypto reviews, tutorials, and market analysis videos.",
@@ -1330,6 +1374,13 @@
                 url: "https://bankless.com",
                 category: "Video",
                 icon: "ph-headphones"
+            },
+            {
+                name: "Bloomberg Markets",
+                description: "Financial news coverage and market analysis.",
+                url: "https://bloomberg.com/markets",
+                category: "Video",
+                icon: "ph-youtube-logo"
             }
         ];
 
@@ -1875,7 +1926,7 @@
         function getExplorePageHTML() {
             return `
                 <div class="page-indicator">
-                    <i class="ph ph-compass"></i> Explore · Crypto Resources
+                    <i class="ph ph-compass"></i> Explore · Financial Resources
                 </div>
                 <div class="explore-search">
                     <div class="search-wrapper">
