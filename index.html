@@ -1446,9 +1446,7 @@
             getDoc,
             updateDoc,
             query,
-            orderBy,
-            limit,
-            startAfter
+            orderBy
         } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -1479,19 +1477,27 @@
         });
 
         // ============================================
-        // VIEW TRACKING FUNCTION
+        // VIEW TRACKING FUNCTION (FIXED)
         // ============================================
         async function trackPostView(postId) {
+            if (!postId) return;
+            
             try {
-                // Don't wait for response - fire and forget
-                fetch(`${API_BASE}/track-view`, {
+                console.log('📊 Tracking view for post:', postId);
+                const response = await fetch(`${API_BASE}/track-view`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ postId })
-                }).catch(err => console.log('Track view error:', err));
+                });
+                
+                if (!response.ok) {
+                    console.log('View tracking response not OK:', response.status);
+                } else {
+                    const data = await response.json();
+                    console.log('✅ View tracked:', data);
+                }
             } catch (error) {
-                // Silently fail - don't affect user experience
-                console.log('Track view failed:', error);
+                console.log('Track view error (non-critical):', error);
             }
         }
 
@@ -1952,11 +1958,11 @@
         };
 
         // ============================================
-        // UPDATED RENDER FUNCTIONS WITH VIEW COUNTS
+        // RENDER FUNCTIONS WITH VIEW TRACKING
         // ============================================
         function renderArticlePost(post) {
-            // Track view when post is rendered
-            trackPostView(post.id);
+            // 🔥 FIXED: Track view when post is rendered
+            setTimeout(() => trackPostView(post.id), 100);
             
             const expanded = expandedPosts.get(post.id) || false;
             const liked = userLikes.get(post.id) || false;
@@ -1975,7 +1981,7 @@
                             <button class="read-more-btn" style="font-size:0.7rem;" onclick="toggleReadMore('${post.id}', false, event)">${expanded ? 'less' : 'more'}</button>
                         ` : ''}
                         <div class="interaction-bar">
-                            <!-- 👁️ VIEW COUNT - NOW VISIBLE TO USERS -->
+                            <!-- 👁️ VIEW COUNT -->
                             <div class="interaction-item">
                                 <i class="ph ph-eye"></i>
                                 <span>${views.toLocaleString()}</span>
@@ -2016,8 +2022,8 @@
         }
 
         function renderVideoPost(post) {
-            // Track view when post is rendered
-            trackPostView(post.id);
+            // 🔥 FIXED: Track view when post is rendered
+            setTimeout(() => trackPostView(post.id), 100);
             
             const videoId = getYouTubeVideoId(post.youtubeUrl) || 'dQw4w9WgXcQ';
             const expanded = expandedPosts.get(post.id) || false;
@@ -2047,7 +2053,7 @@
                     ` : ''}
                     <div style="padding:0 15px 15px;">
                         <div class="interaction-bar" style="margin-top:0;">
-                            <!-- 👁️ VIEW COUNT - NOW VISIBLE TO USERS -->
+                            <!-- 👁️ VIEW COUNT -->
                             <div class="interaction-item">
                                 <i class="ph ph-eye"></i>
                                 <span>${views.toLocaleString()}</span>
@@ -2088,8 +2094,8 @@
         }
 
         async function renderFeaturedPost(featured) {
-            // Track view when post is rendered
-            trackPostView(featured.id);
+            // 🔥 FIXED: Track view when post is rendered
+            setTimeout(() => trackPostView(featured.id), 100);
             
             const el = document.getElementById('featuredSection');
             if (!el) return;
@@ -2123,7 +2129,7 @@
                         ` : ''}
                         <div style="padding:0 15px 15px;">
                             <div class="interaction-bar" style="margin-top:0;">
-                                <!-- 👁️ VIEW COUNT - NOW VISIBLE TO USERS -->
+                                <!-- 👁️ VIEW COUNT -->
                                 <div class="interaction-item">
                                     <i class="ph ph-eye"></i>
                                     <span>${views.toLocaleString()}</span>
@@ -2178,7 +2184,7 @@
                             ` : ''}
                         </div>
                         <div class="interaction-bar">
-                            <!-- 👁️ VIEW COUNT - NOW VISIBLE TO USERS -->
+                            <!-- 👁️ VIEW COUNT -->
                             <div class="interaction-item">
                                 <i class="ph ph-eye"></i>
                                 <span>${views.toLocaleString()}</span>
@@ -2246,7 +2252,6 @@
                     list.innerHTML = '<div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>';
                 }
                 
-                // Get comments from the post object (already cached)
                 const post = allPosts.find(p => p.id === postId);
                 if (!post) return;
                 
@@ -2308,11 +2313,9 @@
             if (!text) return;
             
             try {
-                // For demo, we'll just update locally
                 input.value = '';
                 updateCharCount(postId);
                 
-                // Add comment to local state
                 const post = allPosts.find(p => p.id === postId);
                 if (post) {
                     const newComment = {
@@ -2324,13 +2327,11 @@
                     post.comments = post.comments || [];
                     post.comments.unshift(newComment);
                     
-                    // Update comment count
                     const countSpan = document.getElementById(`comment-count-${postId}`);
                     if (countSpan) {
                         countSpan.textContent = post.comments.length;
                     }
                     
-                    // Reload comments
                     await loadComments(postId, 1);
                 }
             } catch (error) {
@@ -2365,7 +2366,6 @@
 
         async function handleLike(postId) {
             try {
-                // For demo, just update locally
                 const post = allPosts.find(p => p.id === postId);
                 if (!post) return;
                 
@@ -2381,7 +2381,6 @@
                     post.likedBy = (post.likedBy || []).filter(id => id !== currentUser.uid);
                 }
                 
-                // Update UI
                 const postElement = document.getElementById(`post-${postId}`);
                 if (postElement) {
                     const likeBtn = postElement.querySelector('.like-btn');
