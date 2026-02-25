@@ -1536,59 +1536,68 @@
 
         // ============================================
         // RSS FEEDS - Organized by category
+        // Home page will ONLY show CoinTelegraph
+        // Explore page will show ALL feeds
         // ============================================
         const RSS_FEEDS = [
-            // Crypto News
+            // Crypto News (Only this one shows on home page)
             {
                 name: 'CoinTelegraph',
                 url: 'https://cointelegraph.com/rss',
                 category: 'news',
                 region: 'global',
-                icon: 'ph-lightning'
+                icon: 'ph-lightning',
+                showOnHome: true  // Only CoinTelegraph has this true
             },
-            // Stocks/Markets News
+            // Stocks/Markets News (These only show in Explore)
             {
                 name: 'MarketWatch',
                 url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories',
                 category: 'news',
                 region: 'global',
-                icon: 'ph-chart-line'
+                icon: 'ph-chart-line',
+                showOnHome: false
             },
             {
                 name: 'Investing.com',
                 url: 'https://www.investing.com/rss/news_25.rss',
                 category: 'news',
                 region: 'global',
-                icon: 'ph-trend-up'
+                icon: 'ph-trend-up',
+                showOnHome: false
             },
             {
                 name: 'CNBC',
                 url: 'https://www.cnbc.com/id/20409666/device/rss/rss.html',
                 category: 'news',
                 region: 'global',
-                icon: 'ph-broadcast'
+                icon: 'ph-broadcast',
+                showOnHome: false
             },
-            // Nigeria Finance
+            // Nigeria Finance (These only show in Explore)
             {
                 name: 'Entrepreneur Business Blog',
                 url: 'https://www.entrepreneurbusinessblog.com/feed/',
                 category: 'news',
                 region: 'nigeria',
-                icon: 'ph-buildings'
+                icon: 'ph-buildings',
+                showOnHome: false
             },
             {
                 name: 'Nairametrics',
                 url: 'https://nairametrics.com/feed/',
                 category: 'news',
                 region: 'nigeria',
-                icon: 'ph-chart-pie'
+                icon: 'ph-chart-pie',
+                showOnHome: false
             },
             {
                 name: 'Investing Nigeria',
                 url: 'https://ng.investing.com/rss/market_overview_investing_ideas.rss',
                 category: 'news',
                 region: 'nigeria',
-                icon: 'ph-map-pin'
+                icon: 'ph-map-pin',
+                showOnHome: false
             }
         ];
 
@@ -1712,18 +1721,24 @@
         // ============================================
         // FETCH RSS FEEDS (with rss2json.com - FREE, no API key needed)
         // ============================================
-        async function fetchAllRssFeeds() {
+        async function fetchAllRssFeeds(onlyHomeFeeds = false) {
             console.log('Fetching RSS feeds...');
             document.getElementById('cacheIndicator').innerHTML = '<i class="ph ph-cloud-arrow-up"></i> Fetching RSS feeds';
             
             try {
                 const allArticles = [];
                 
+                // Filter feeds based on where they're being fetched for
+                let feedsToFetch = RSS_FEEDS;
+                if (onlyHomeFeeds) {
+                    feedsToFetch = RSS_FEEDS.filter(feed => feed.showOnHome === true);
+                }
+                
                 // Use rss2json.com (completely free, no API key required)
                 const RSS2JSON_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
                 
                 // Fetch all feeds in parallel
-                const feedPromises = RSS_FEEDS.map(async (feed) => {
+                const feedPromises = feedsToFetch.map(async (feed) => {
                     try {
                         const response = await fetch(RSS2JSON_API + encodeURIComponent(feed.url));
                         const data = await response.json();
@@ -1754,7 +1769,8 @@
                                     likes: 0,
                                     comments: [],
                                     featured: false,
-                                    rss: true
+                                    rss: true,
+                                    allowInteractions: !onlyHomeFeeds // Disable likes/comments on home page RSS
                                 };
                             });
                             
@@ -1820,11 +1836,13 @@
 
         // ============================================
         // GET ALL POSTS (Firebase + RSS)
+        // For home page: Only CoinTelegraph RSS
+        // For explore: All RSS feeds
         // ============================================
-        async function getAllPosts() {
+        async function getAllPosts(forHomePage = true) {
             const [firebasePosts, rssPosts] = await Promise.all([
                 getFirebasePosts(),
-                fetchAllRssFeeds()
+                fetchAllRssFeeds(forHomePage) // Pass flag to only get home page feeds
             ]);
             
             allRssPosts = rssPosts;
@@ -2045,7 +2063,7 @@
             btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Refreshing...';
             btn.disabled = true;
             
-            // Clear RSS cache
+            // Clear cache
             postCache.delete('firebase-posts');
             await loadHomePage();
             
@@ -2056,7 +2074,7 @@
         async function loadHomePage() {
             document.getElementById('mainContent').innerHTML = getHomePageHTML();
             try {
-                allPosts = await getAllPosts();
+                allPosts = await getAllPosts(true); // Pass true for home page (only CoinTelegraph)
                 
                 if (allPosts.length === 0) {
                     document.getElementById('featuredSection').innerHTML = '<div class="loading">No news yet</div>';
@@ -2101,13 +2119,15 @@
                 currentDisplayCount = end;
                 let html = reset ? '' : list.innerHTML;
                 for (const p of posts) {
-                    html += p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p);
+                    html += p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p, true); // Pass true for home page
                 }
                 list.innerHTML = html;
                 
-                // Load comments for each post
+                // Load comments only for non-RSS posts on home page
                 for (const p of posts) {
-                    await loadComments(p.id, 1, true);
+                    if (!p.rss) {
+                        await loadComments(p.id, 1, true);
+                    }
                 }
                 
                 updateAllLikeButtons();
@@ -2127,10 +2147,14 @@
             }
         };
 
-        function renderArticlePost(post) {
+        function renderArticlePost(post, isHomePage = false) {
             const expanded = expandedPosts.get(post.id) || false;
             const liked = userLikes.get(post.id) || false;
             const comments = post.comments || [];
+            const isRSS = post.rss === true;
+            
+            // On home page, RSS posts should have no interactions
+            const showInteractions = !(isHomePage && isRSS);
             
             return `
                 <div class="news-item" id="post-${post.id}" onclick="window.open('${post.sourceUrl || '#'}','_blank')">
@@ -2149,31 +2173,34 @@
                         ${(post.content || '').length > 100 ? `
                             <button class="read-more-btn" style="font-size:0.7rem;" onclick="event.stopPropagation(); toggleReadMore('${post.id}', false, event)">${expanded ? 'less' : 'more'}</button>
                         ` : ''}
-                        <div class="interaction-bar" onclick="event.stopPropagation()">
-                            <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
-                                <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
-                                <span class="like-count">${post.likes || 0}</span>
-                            </div>
-                            <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
-                                <i class="ph ph-chat-circle"></i>
-                                <span id="comment-count-${post.id}">${comments.length}</span>
-                            </div>
-                        </div>
                         
-                        <!-- Comments Section -->
-                        <div class="comments-section" id="comments-${post.id}" style="display: none;" onclick="event.stopPropagation()">
-                            <div class="comment-input-area">
-                                <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${post.id}')">
-                                <span class="comment-char-count">150/150</span>
-                                <button class="comment-submit" onclick="addComment('${post.id}', event)" disabled>Post</button>
+                        ${showInteractions ? `
+                            <div class="interaction-bar" onclick="event.stopPropagation()">
+                                <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
+                                    <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
+                                    <span class="like-count">${post.likes || 0}</span>
+                                </div>
+                                <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
+                                    <i class="ph ph-chat-circle"></i>
+                                    <span id="comment-count-${post.id}">${comments.length}</span>
+                                </div>
                             </div>
-                            <div class="comments-list" id="comments-list-${post.id}">
-                                <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
+                            
+                            <!-- Comments Section (only for non-RSS posts) -->
+                            <div class="comments-section" id="comments-${post.id}" style="display: none;" onclick="event.stopPropagation()">
+                                <div class="comment-input-area">
+                                    <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${post.id}')">
+                                    <span class="comment-char-count">150/150</span>
+                                    <button class="comment-submit" onclick="addComment('${post.id}', event)" disabled>Post</button>
+                                </div>
+                                <div class="comments-list" id="comments-list-${post.id}">
+                                    <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
+                                </div>
+                                <div class="load-more-comments" id="load-more-comments-${post.id}" style="display: none;" onclick="loadMoreComments('${post.id}')">
+                                    <i class="ph ph-arrow-down"></i> Load more comments
+                                </div>
                             </div>
-                            <div class="load-more-comments" id="load-more-comments-${post.id}" style="display: none;" onclick="loadMoreComments('${post.id}')">
-                                <i class="ph ph-arrow-down"></i> Load more comments
-                            </div>
-                        </div>
+                        ` : ''}
                         
                         <div class="meta-info">
                             <span><i class="ph ph-clock"></i> ${getRelativeTime(post.createdAt || post.timestamp)}</span>
@@ -2252,6 +2279,7 @@
             
             const liked = userLikes.get(featured.id) || false;
             const comments = featured.comments || [];
+            const isRSS = featured.rss === true;
             
             if (featured.type === 'video') {
                 const videoId = getYouTubeVideoId(featured.youtubeUrl) || 'dQw4w9WgXcQ';
@@ -2331,38 +2359,43 @@
                                 </button>
                             ` : ''}
                         </div>
-                        <div class="interaction-bar" onclick="event.stopPropagation()">
-                            <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${featured.id}', event)">
-                                <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
-                                <span class="like-count">${featured.likes || 0}</span>
-                            </div>
-                            <div class="interaction-item" onclick="toggleComments('${featured.id}', event)">
-                                <i class="ph ph-chat-circle"></i>
-                                <span id="comment-count-${featured.id}">${comments.length}</span>
-                            </div>
-                        </div>
                         
-                        <!-- Comments Section -->
-                        <div class="comments-section" id="comments-${featured.id}" style="display: none;" onclick="event.stopPropagation()">
-                            <div class="comment-input-area">
-                                <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${featured.id}')">
-                                <span class="comment-char-count">150/150</span>
-                                <button class="comment-submit" onclick="addComment('${featured.id}', event)" disabled>Post</button>
+                        ${!isRSS ? `
+                            <div class="interaction-bar" onclick="event.stopPropagation()">
+                                <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${featured.id}', event)">
+                                    <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
+                                    <span class="like-count">${featured.likes || 0}</span>
+                                </div>
+                                <div class="interaction-item" onclick="toggleComments('${featured.id}', event)">
+                                    <i class="ph ph-chat-circle"></i>
+                                    <span id="comment-count-${featured.id}">${comments.length}</span>
+                                </div>
                             </div>
-                            <div class="comments-list" id="comments-list-${featured.id}">
-                                <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
+                            
+                            <!-- Comments Section -->
+                            <div class="comments-section" id="comments-${featured.id}" style="display: none;" onclick="event.stopPropagation()">
+                                <div class="comment-input-area">
+                                    <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${featured.id}')">
+                                    <span class="comment-char-count">150/150</span>
+                                    <button class="comment-submit" onclick="addComment('${featured.id}', event)" disabled>Post</button>
+                                </div>
+                                <div class="comments-list" id="comments-list-${featured.id}">
+                                    <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
+                                </div>
+                                <div class="load-more-comments" id="load-more-comments-${featured.id}" style="display: none;" onclick="loadMoreComments('${featured.id}')">
+                                    <i class="ph ph-arrow-down"></i> Load more comments
+                                </div>
                             </div>
-                            <div class="load-more-comments" id="load-more-comments-${featured.id}" style="display: none;" onclick="loadMoreComments('${featured.id}')">
-                                <i class="ph ph-arrow-down"></i> Load more comments
-                            </div>
-                        </div>
+                        ` : ''}
                         
                         ${featured.featured ? '<div style="margin-top:10px;"><span class="article-featured">⭐ Featured</span></div>' : ''}
                     </div>
                 `;
             }
             
-            await loadComments(featured.id, 1, true);
+            if (!isRSS) {
+                await loadComments(featured.id, 1, true);
+            }
             updateAllLikeButtons();
         }
 
@@ -2625,10 +2658,12 @@
                 list.innerHTML = '<div class="loading">No results found</div>';
                 return;
             }
-            list.innerHTML = filtered.map(p => p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p)).join('');
+            list.innerHTML = filtered.map(p => p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p, true)).join('');
             
             for (const p of filtered) {
-                await loadComments(p.id, 1, true);
+                if (!p.rss) {
+                    await loadComments(p.id, 1, true);
+                }
             }
             
             updateAllLikeButtons();
@@ -2748,7 +2783,7 @@
                 }).join('');
             } 
             else if (category === 'news') {
-                // Show only RSS articles
+                // Show only RSS articles (all of them in explore)
                 const rssArticles = allRssPosts.filter(post => {
                     return searchTerm === '' || 
                            post.title.toLowerCase().includes(searchTerm) ||
