@@ -724,7 +724,7 @@
             margin-top: 6px;
         }
 
-        /* Explore Page - Improved */
+        /* Explore Page */
         .explore-header {
             margin-bottom: 20px;
         }
@@ -941,7 +941,7 @@
             width: 100%;
         }
 
-        /* Footer */
+        /* Footer - Updated Newsletter */
         .footer-section {
             margin-top: 40px;
             padding: 30px 0 20px;
@@ -985,6 +985,7 @@
         .newsletter-form {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
         .newsletter-input {
             flex: 1;
@@ -999,18 +1000,48 @@
         .newsletter-input:focus {
             border-color: #fab005;
         }
+        .newsletter-input:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            background: #2a2f38;
+        }
         .newsletter-button {
             background: #fab005;
             color: #000;
             border: none;
             border-radius: 12px;
-            padding: 0 20px;
+            padding: 0 25px;
             font-weight: 600;
             cursor: pointer;
             transition: opacity 0.2s ease;
+            height: 45px;
+            white-space: nowrap;
         }
         .newsletter-button:hover {
             opacity: 0.9;
+        }
+        .newsletter-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .newsletter-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: none;
+        }
+        .newsletter-status.success {
+            display: block;
+            background: #00c85320;
+            color: #00c853;
+            border: 1px solid #00c853;
+        }
+        .newsletter-status.info {
+            display: block;
+            background: #2196f320;
+            color: #2196f3;
+            border: 1px solid #2196f3;
         }
 
         .app-promo {
@@ -1292,7 +1323,7 @@
             <!-- Footer - Shows on all pages -->
             <div class="footer-section">
                 <div class="footer-grid">
-                    <!-- Newsletter -->
+                    <!-- Newsletter with auto-subscribe for signed-in users -->
                     <div class="newsletter-card">
                         <div class="newsletter-icon"><i class="ph ph-envelope"></i></div>
                         <div class="newsletter-title">Never Miss a Story</div>
@@ -1300,9 +1331,10 @@
                             Get the top 5 crypto stories delivered to your inbox daily. Zero spam.
                         </div>
                         <div class="newsletter-form">
-                            <input type="email" class="newsletter-input" id="newsletterEmail" placeholder="your@email.com">
+                            <input type="email" class="newsletter-input" id="newsletterEmail" placeholder="your@email.com" readonly>
                             <button class="newsletter-button" id="subscribeBtn">Subscribe</button>
                         </div>
+                        <div class="newsletter-status" id="newsletterStatus"></div>
                     </div>
 
                     <!-- App Promo -->
@@ -1401,7 +1433,7 @@
         // ============================================
         let currentUser = null;
         let pendingAction = null;
-        let userLikes = new Map(); // Stores which posts the current user has liked
+        let userLikes = new Map();
         let currentPage = 'home';
         let allPosts = [];
         let searchTerm = '';
@@ -1413,11 +1445,14 @@
         let featuredPost = null;
 
         // Comment states
-        const commentStates = new Map(); // Stores pagination state for each post's comments
+        const commentStates = new Map();
         const COMMENTS_PER_BATCH = 5;
         let isSearching = false;
         const videoPlayed = new Map();
         const expandedPosts = new Map();
+
+        // Newsletter state
+        let newsletterSubscribed = false;
 
         // Explore filter
         let exploreCategory = 'all';
@@ -1498,32 +1533,71 @@
             return `<p>${plain.substring(0, limit).split(' ').slice(0, -1).join(' ')}...</p>`;
         }
 
+        // Fixed relative time function for comments
         function getRelativeTime(timestamp) {
             if (!timestamp) return 'Just now';
+            
             try {
                 let postDate;
+                
+                // Handle Firebase Timestamp objects
                 if (timestamp && typeof timestamp === 'object' && timestamp.seconds) {
                     postDate = new Date(timestamp.seconds * 1000);
-                } else if (timestamp.toDate) {
+                }
+                // Handle Firebase Timestamp with toDate method
+                else if (timestamp.toDate) {
                     postDate = timestamp.toDate();
-                } else if (typeof timestamp === 'string') {
+                } 
+                // Handle ISO string
+                else if (typeof timestamp === 'string') {
                     postDate = new Date(timestamp);
-                } else if (typeof timestamp === 'number') {
+                    if (isNaN(postDate.getTime())) {
+                        // Try parsing the time string format from backend
+                        const parsed = new Date(timestamp);
+                        if (!isNaN(parsed.getTime())) {
+                            postDate = parsed;
+                        } else {
+                            return 'Just now';
+                        }
+                    }
+                }
+                // Handle number (milliseconds)
+                else if (typeof timestamp === 'number') {
                     postDate = new Date(timestamp);
-                } else if (timestamp && timestamp._seconds) {
+                }
+                // Handle object with _seconds (Firestore timestamp format)
+                else if (timestamp && timestamp._seconds) {
                     postDate = new Date(timestamp._seconds * 1000);
-                } else {
+                }
+                else {
                     return 'Just now';
                 }
-                if (isNaN(postDate.getTime())) return 'Just now';
+
+                // Check if date is valid
+                if (isNaN(postDate.getTime())) {
+                    return 'Just now';
+                }
+
+                const now = new Date();
+                const diffMs = now - postDate;
+                const diffSecs = Math.floor(diffMs / 1000);
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+
+                if (diffSecs < 5) return 'Just now';
+                if (diffSecs < 60) return `${diffSecs} seconds ago`;
+                if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+                if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
                 
-                const diff = Math.floor((new Date() - postDate) / 60000);
-                if (diff < 1) return 'Just now';
-                if (diff < 60) return `${diff} minute${diff > 1 ? 's' : ''} ago`;
-                if (diff < 1440) return `${Math.floor(diff / 60)} hour${Math.floor(diff / 60) > 1 ? 's' : ''} ago`;
-                if (diff < 10080) return `${Math.floor(diff / 1440)} day${Math.floor(diff / 1440) > 1 ? 's' : ''} ago`;
-                return postDate.toLocaleDateString();
-            } catch {
+                return postDate.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            } catch (error) {
+                console.error('Error parsing timestamp:', error, timestamp);
                 return 'Just now';
             }
         }
@@ -1575,11 +1649,59 @@
         }
 
         // ============================================
+        // NEWSLETTER FUNCTIONS
+        // ============================================
+        function updateNewsletterForUser() {
+            const emailInput = document.getElementById('newsletterEmail');
+            const subscribeBtn = document.getElementById('subscribeBtn');
+            const statusDiv = document.getElementById('newsletterStatus');
+            
+            if (!emailInput || !subscribeBtn) return;
+            
+            if (currentUser) {
+                // Auto-fill with user's email and disable input
+                emailInput.value = currentUser.email || '';
+                emailInput.disabled = true;
+                subscribeBtn.textContent = 'Subscribed ✓';
+                subscribeBtn.disabled = true;
+                statusDiv.className = 'newsletter-status success';
+                statusDiv.textContent = `You're subscribed with ${currentUser.email}`;
+            } else {
+                // Not signed in - enable input and change button to redirect to sign in
+                emailInput.value = '';
+                emailInput.disabled = false;
+                emailInput.placeholder = 'Enter your email';
+                subscribeBtn.textContent = 'Subscribe';
+                subscribeBtn.disabled = false;
+                statusDiv.className = 'newsletter-status';
+                statusDiv.textContent = '';
+            }
+        }
+
+        function handleNewsletterSubscribe() {
+            if (!currentUser) {
+                // Redirect to sign in
+                pendingAction = { type: 'newsletter' };
+                signInWithGoogle();
+                return;
+            }
+            
+            // User is signed in - show success
+            const statusDiv = document.getElementById('newsletterStatus');
+            statusDiv.className = 'newsletter-status success';
+            statusDiv.textContent = `Thanks! You're subscribed with ${currentUser.email}`;
+            
+            // In a real app, you'd send this to your backend
+            console.log('Newsletter subscribed:', currentUser.email);
+        }
+
+        // ============================================
         // AUTH STATE OBSERVER
         // ============================================
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             updateUserProfile();
+            updateNewsletterForUser();
             
             // Reload user likes when user changes
             if (user) {
@@ -1606,6 +1728,8 @@
                             if (text) input.value = text;
                         }
                     }
+                } else if (type === 'newsletter') {
+                    handleNewsletterSubscribe();
                 }
                 pendingAction = null;
             }
@@ -2078,7 +2202,7 @@
                     state.comments = data.comments;
                     list.innerHTML = data.comments.length ? data.comments.map(c => `
                         <div class="comment-item">
-                            <div class="comment-header"><span class="comment-author">${c.author}</span><span class="comment-time">${c.time}</span></div>
+                            <div class="comment-header"><span class="comment-author">${c.author}</span><span class="comment-time">${getRelativeTime(c.timestamp)}</span></div>
                             <div class="comment-text">${c.text}</div>
                         </div>
                     `).join('') : '<div style="color:#8a8d91; text-align:center; padding:10px;">No comments yet</div>';
@@ -2086,7 +2210,7 @@
                     state.comments = [...(state.comments || []), ...data.comments];
                     list.innerHTML += data.comments.map(c => `
                         <div class="comment-item">
-                            <div class="comment-header"><span class="comment-author">${c.author}</span><span class="comment-time">${c.time}</span></div>
+                            <div class="comment-header"><span class="comment-author">${c.author}</span><span class="comment-time">${getRelativeTime(c.timestamp)}</span></div>
                             <div class="comment-text">${c.text}</div>
                         </div>
                     `).join('');
@@ -2307,7 +2431,7 @@
         };
 
         // ============================================
-        // EXPLORE PAGE (Improved)
+        // EXPLORE PAGE
         // ============================================
         function loadExplorePage() {
             document.getElementById('mainContent').innerHTML = `
@@ -2466,10 +2590,10 @@
             document.getElementById('logo')?.addEventListener('click', () => {
                 document.getElementById('scrollableContent').scrollTo({ top: 0, behavior: 'smooth' });
             });
-            document.getElementById('subscribeBtn')?.addEventListener('click', () => {
-                const email = document.getElementById('newsletterEmail').value;
-                showPopup('Thanks!', email ? `We'll notify ${email}` : 'Please enter email');
-            });
+            
+            // Newsletter button
+            document.getElementById('subscribeBtn')?.addEventListener('click', handleNewsletterSubscribe);
+            
             document.getElementById('appStoreBtn')?.addEventListener('click', () => showPopup('Coming Soon', 'iOS app in development'));
             document.getElementById('playStoreBtn')?.addEventListener('click', () => showPopup('Coming Soon', 'Android app in development'));
             document.getElementById('aboutLink')?.addEventListener('click', () => showPopup('About', 'Your trusted crypto news platform'));
