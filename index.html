@@ -79,9 +79,59 @@
             color: #8a8d91;
             text-decoration: none;
             font-size: 0.9rem;
-            transition: color 0.2s ease;
+            transition: all 0.2s ease;
             cursor: pointer;
+            padding: 5px 0;
+            position: relative;
         }
+        
+        /* Active page highlight - underline style */
+        .desktop-menu a.active {
+            color: #fab005;
+        }
+        
+        .desktop-menu a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #fab005;
+            border-radius: 2px;
+            animation: slideIn 0.2s ease;
+        }
+        
+        /* Alternative highlight styles - you can switch between these */
+        /* Option 2: Background highlight */
+        /*
+        .desktop-menu a.active {
+            background: #fab00520;
+            color: #fab005;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+        */
+        
+        /* Option 3: Glow effect */
+        /*
+        .desktop-menu a.active {
+            color: #fab005;
+            text-shadow: 0 0 8px rgba(250, 176, 5, 0.5);
+        }
+        */
+        
+        @keyframes slideIn {
+            from {
+                width: 0;
+                opacity: 0;
+            }
+            to {
+                width: 100%;
+                opacity: 1;
+            }
+        }
+
         .desktop-menu a:hover {
             color: #fab005;
         }
@@ -1215,9 +1265,9 @@
                 </div>
                 
                 <div class="desktop-menu">
-                    <a onclick="navigateTo('home')">Home</a>
-                    <a onclick="navigateTo('explore')">Explore</a>
-                    <a onclick="navigateTo('markets')">Markets</a>
+                    <a onclick="navigateTo('home')" id="top-nav-home">Home</a>
+                    <a onclick="navigateTo('explore')" id="top-nav-explore">Explore</a>
+                    <a onclick="navigateTo('markets')" id="top-nav-markets">Markets</a>
                 </div>
 
                 <div class="header-right">
@@ -1589,6 +1639,20 @@
             }
         }
 
+        // Function to update top navigation active state
+        function updateTopNavigation(page) {
+            // Remove active class from all top nav links
+            document.querySelectorAll('.desktop-menu a').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Add active class to current page
+            const activeLink = document.getElementById(`top-nav-${page}`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+        }
+
         // ============================================
         // FETCH RSS FEEDS (with rss2json.com - FREE, no API key needed)
         // ============================================
@@ -1823,8 +1887,13 @@
         // ============================================
         window.navigateTo = function(page) {
             currentPage = page;
+            
+            // Update bottom nav
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.getElementById(`nav-${page}`)?.classList.add('active');
+            
+            // Update top navigation highlight
+            updateTopNavigation(page);
             
             const homeSearch = document.getElementById('homeSearch');
             const homeTrending = document.getElementById('homeTrending');
@@ -2428,6 +2497,9 @@
         // Initial load
         renderTrending();
         setupEventListeners();
+        
+        // Set initial active state for top navigation
+        updateTopNavigation('home');
         navigateTo('home');
     </script>
 </body>
