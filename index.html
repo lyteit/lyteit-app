@@ -1467,6 +1467,11 @@
             enableIndexedDbPersistence,
             collection,
             getDocs,
+            doc,
+            updateDoc,
+            arrayUnion,
+            arrayRemove,
+            increment,
             query,
             orderBy
         } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
@@ -1503,7 +1508,7 @@
         // ============================================
         let currentUser = null;
         let pendingAction = null;
-        let userLikes = new Map();
+        let userLikes = new Map(); // Track which posts user has liked
         let currentPage = 'home';
         let allPosts = [];
         let allRssPosts = [];
@@ -1819,7 +1824,14 @@
                 
                 const posts = [];
                 snapshot.forEach(doc => {
-                    posts.push({ id: doc.id, ...doc.data() });
+                    posts.push({ 
+                        id: doc.id, 
+                        ...doc.data(),
+                        // Ensure these fields exist
+                        likes: doc.data().likes || 0,
+                        likedBy: doc.data().likedBy || [],
+                        comments: doc.data().comments || []
+                    });
                 });
                 
                 postCache.set(cacheKey, {
@@ -2202,10 +2214,12 @@
                             </div>
                         ` : ''}
                         
-                        <div class="meta-info">
-                            <span><i class="ph ph-clock"></i> ${getRelativeTime(post.createdAt || post.timestamp)}</span>
-                            ${post.featured ? '<span class="article-featured">⭐ Featured</span>' : ''}
-                        </div>
+                        ${!isRSS ? `
+                            <div class="meta-info">
+                                <span><i class="ph ph-clock"></i> ${getRelativeTime(post.createdAt || post.timestamp)}</span>
+                                ${post.featured ? '<span class="article-featured">⭐ Featured</span>' : ''}
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -2348,7 +2362,9 @@
                                 <i class="ph ph-newspaper"></i> ${featured.source}
                             </div>
                         ` : ''}
-                        <div class="meta-info"><span><i class="ph ph-clock"></i> ${getRelativeTime(featured.createdAt || featured.timestamp)}</span></div>
+                        ${!isRSS ? `
+                            <div class="meta-info"><span><i class="ph ph-clock"></i> ${getRelativeTime(featured.createdAt || featured.timestamp)}</span></div>
+                        ` : ''}
                         <div class="featured-content" onclick="event.stopPropagation()">
                             <div class="post-content-container" data-full-content="${(featured.content || '').replace(/"/g, '&quot;')}">
                                 ${expanded ? formatContent(featured.content) : truncateForPreview(featured.content, 150)}
@@ -2427,7 +2443,7 @@
                     list.innerHTML = '<div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>';
                 }
                 
-                // Get comments from the post object (already cached)
+                // Get comments from the post object
                 const post = allPosts.find(p => p.id === postId);
                 if (!post) return;
                 
@@ -2489,21 +2505,24 @@
             if (!text) return;
             
             try {
-                // For demo, we'll just update locally
-                input.value = '';
-                updateCharCount(postId);
+                // Create new comment
+                const newComment = {
+                    id: Date.now().toString(),
+                    text: text,
+                    author: currentUser.displayName || 'Anonymous',
+                    authorId: currentUser.uid,
+                    timestamp: new Date().toISOString()
+                };
                 
-                // Add comment to local state
+                // Update local state
                 const post = allPosts.find(p => p.id === postId);
                 if (post) {
-                    const newComment = {
-                        id: Date.now(),
-                        text: text,
-                        author: currentUser.displayName || 'Anonymous',
-                        timestamp: new Date().toISOString()
-                    };
                     post.comments = post.comments || [];
                     post.comments.unshift(newComment);
+                    
+                    // Update UI
+                    input.value = '';
+                    updateCharCount(postId);
                     
                     // Update comment count
                     const countSpan = document.getElementById(`comment-count-${postId}`);
@@ -2513,6 +2532,10 @@
                     
                     // Reload comments
                     await loadComments(postId, 1);
+                    
+                    // TODO: Save to Firebase when you have backend setup
+                    // For now, comments will persist in memory but not across refreshes
+                    console.log('Comment added (not saved to Firebase yet):', newComment);
                 }
             } catch (error) {
                 console.error('Error adding comment:', error);
@@ -2546,11 +2569,12 @@
 
         async function handleLike(postId) {
             try {
-                // For demo, just update locally
                 const post = allPosts.find(p => p.id === postId);
-                if (!post) return;
+                if (!post || post.rss) return; // Don't allow liking RSS posts
                 
                 const liked = userLikes.get(postId) || false;
+                
+                // Update local state immediately for UI feedback
                 userLikes.set(postId, !liked);
                 
                 if (!liked) {
@@ -2580,6 +2604,11 @@
                         likeCount.textContent = post.likes;
                     }
                 }
+                
+                // TODO: Save to Firebase when you have backend setup
+                // For now, likes will persist in memory but not across refreshes
+                console.log('Like toggled (not saved to Firebase yet):', postId, !liked);
+                
             } catch (error) {
                 console.error('Error liking post:', error);
                 showPopup('Error', 'Failed to like post');
