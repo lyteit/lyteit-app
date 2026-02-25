@@ -590,135 +590,6 @@
             background: #1e2128;
         }
 
-        /* Interaction Bar */
-        .interaction-bar {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-top: 12px;
-            padding-top: 8px;
-            border-top: 1px solid #333;
-        }
-        .interaction-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: #8a8d91;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        .interaction-item:hover {
-            color: #fab005;
-        }
-        .interaction-item.liked {
-            color: #ff5252;
-        }
-        .interaction-item i {
-            font-size: 1.1rem;
-        }
-
-        /* Comments Section */
-        .comments-section {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #333;
-        }
-        .comment-input-area {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .comment-input {
-            flex: 1;
-            background: #1c1f24;
-            border: 1px solid #333;
-            border-radius: 20px;
-            padding: 10px 15px;
-            color: white;
-            font-size: 0.85rem;
-            outline: none;
-        }
-        .comment-input:focus {
-            border-color: #fab005;
-        }
-        .comment-input::placeholder {
-            color: #8a8d91;
-        }
-        .comment-char-count {
-            color: #8a8d91;
-            font-size: 0.7rem;
-            align-self: center;
-        }
-        .comment-char-count.limit {
-            color: #ff5252;
-        }
-        .comment-submit {
-            background: #fab005;
-            color: #000;
-            border: none;
-            border-radius: 20px;
-            padding: 0 20px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-        .comment-submit:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .comments-list {
-            max-height: 300px;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-        .comment-item {
-            padding: 10px 0;
-            border-bottom: 1px solid #222;
-        }
-        .comment-item:last-child {
-            border-bottom: none;
-        }
-        .comment-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
-        }
-        .comment-author {
-            color: #fab005;
-            font-weight: 600;
-            font-size: 0.8rem;
-        }
-        .comment-time {
-            color: #8a8d91;
-            font-size: 0.65rem;
-        }
-        .comment-text {
-            color: #fff;
-            font-size: 0.8rem;
-            line-height: 1.4;
-            word-break: break-word;
-        }
-        .load-more-comments {
-            text-align: center;
-            margin-top: 10px;
-            padding: 8px;
-            background: #1e2128;
-            border: 1px solid #333;
-            border-radius: 20px;
-            color: #fab005;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .load-more-comments:hover {
-            background: #2a2f38;
-            border-color: #fab005;
-        }
-        .load-more-comments i {
-            margin-right: 5px;
-        }
-
         .meta-info { 
             display: flex; 
             justify-content: space-between; 
@@ -1384,7 +1255,7 @@
                             Get the top 5 crypto stories delivered to your inbox daily. Zero spam.
                         </div>
                         <div class="newsletter-form">
-                            <input type="email" class="newsletter-input" id="newsletterEmail" placeholder="your@email.com" readonly>
+                            <input type="email" class="newsletter-input" id="newsletterEmail" placeholder="your@email.com">
                             <button class="newsletter-button" id="subscribeBtn">Subscribe</button>
                         </div>
                         <div class="newsletter-status" id="newsletterStatus"></div>
@@ -1467,11 +1338,6 @@
             enableIndexedDbPersistence,
             collection,
             getDocs,
-            doc,
-            updateDoc,
-            arrayUnion,
-            arrayRemove,
-            increment,
             query,
             orderBy
         } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
@@ -1507,8 +1373,6 @@
         // APP STATE
         // ============================================
         let currentUser = null;
-        let pendingAction = null;
-        let userLikes = new Map(); // Track which posts user has liked
         let currentPage = 'home';
         let allPosts = [];
         let allRssPosts = [];
@@ -1520,15 +1384,9 @@
         const POSTS_PER_BATCH = 3;
         let featuredPost = null;
 
-        // Comment states
-        const commentStates = new Map();
-        const COMMENTS_PER_BATCH = 5;
         let isSearching = false;
         const videoPlayed = new Map();
         const expandedPosts = new Map();
-
-        // Newsletter state
-        let newsletterSubscribed = false;
 
         // Explore filter
         let exploreCategory = 'all';
@@ -1779,11 +1637,7 @@
                                     region: feed.region,
                                     type: 'article',
                                     createdAt: item.pubDate ? new Date(item.pubDate) : new Date(),
-                                    likes: 0,
-                                    comments: [],
-                                    featured: false,
-                                    rss: true,
-                                    allowInteractions: !onlyHomeFeeds // Disable likes/comments on home page RSS
+                                    rss: true
                                 };
                             });
                             
@@ -1834,11 +1688,7 @@
                 snapshot.forEach(doc => {
                     posts.push({ 
                         id: doc.id, 
-                        ...doc.data(),
-                        // Ensure these fields exist
-                        likes: doc.data().likes || 0,
-                        likedBy: doc.data().likedBy || [],
-                        comments: doc.data().comments || []
+                        ...doc.data()
                     });
                 });
                 
@@ -1885,35 +1735,6 @@
             currentUser = user;
             updateUserProfile();
             updateNewsletterForUser();
-            
-            if (user) {
-                loadUserLikes();
-            } else {
-                userLikes.clear();
-                if (currentPage === 'home') {
-                    loadHomePage();
-                }
-            }
-            
-            if (pendingAction && user) {
-                const { type, postId, text } = pendingAction;
-                if (type === 'like') {
-                    handleLike(postId);
-                } else if (type === 'comment') {
-                    const section = document.getElementById(`comments-${postId}`);
-                    if (section) {
-                        section.style.display = 'block';
-                        const input = section.querySelector('.comment-input');
-                        if (input) {
-                            input.focus();
-                            if (text) input.value = text;
-                        }
-                    }
-                } else if (type === 'newsletter') {
-                    handleNewsletterSubscribe();
-                }
-                pendingAction = null;
-            }
         });
 
         function updateUserProfile() {
@@ -1950,7 +1771,6 @@
         window.handleSignOut = async () => {
             try {
                 await signOut(auth);
-                userLikes.clear();
                 showPopup('Signed Out', 'See you next time!');
             } catch (error) {
                 console.error('Sign-out error:', error);
@@ -1988,7 +1808,6 @@
 
         function handleNewsletterSubscribe() {
             if (!currentUser) {
-                pendingAction = { type: 'newsletter' };
                 signInWithGoogle();
                 return;
             }
@@ -1997,42 +1816,6 @@
             statusDiv.className = 'newsletter-status success';
             statusDiv.textContent = `Thanks! You're subscribed with ${currentUser.email}`;
             console.log('Newsletter subscribed:', currentUser.email);
-        }
-
-        // ============================================
-        // LOAD USER LIKES
-        // ============================================
-        async function loadUserLikes() {
-            if (!currentUser || !allPosts.length) return;
-            
-            userLikes.clear();
-            
-            for (const post of allPosts) {
-                if (post.likedBy && Array.isArray(post.likedBy) && post.likedBy.includes(currentUser.uid)) {
-                    userLikes.set(post.id, true);
-                }
-            }
-            
-            updateAllLikeButtons();
-        }
-
-        function updateAllLikeButtons() {
-            document.querySelectorAll('[id^="post-"]').forEach(postElement => {
-                const postId = postElement.id.replace('post-', '');
-                const liked = userLikes.get(postId) || false;
-                const likeBtn = postElement.querySelector('.like-btn');
-                const likeIcon = likeBtn?.querySelector('i');
-                
-                if (likeBtn && likeIcon) {
-                    if (liked) {
-                        likeBtn.classList.add('liked');
-                        likeIcon.className = 'ph-fill ph-heart';
-                    } else {
-                        likeBtn.classList.remove('liked');
-                        likeIcon.className = 'ph ph-heart';
-                    }
-                }
-            });
         }
 
         // ============================================
@@ -2102,10 +1885,6 @@
                     return;
                 }
                 
-                if (currentUser) {
-                    await loadUserLikes();
-                }
-                
                 const featured = allPosts.filter(p => p.featured === true);
                 featuredPost = featured.length ? featured[Math.floor(Math.random() * featured.length)] : allPosts[0];
                 displayedPosts = allPosts.filter(p => p.id !== featuredPost.id);
@@ -2139,18 +1918,9 @@
                 currentDisplayCount = end;
                 let html = reset ? '' : list.innerHTML;
                 for (const p of posts) {
-                    html += p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p, true); // Pass true for home page
+                    html += p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p);
                 }
                 list.innerHTML = html;
-                
-                // Load comments only for non-RSS posts on home page
-                for (const p of posts) {
-                    if (!p.rss) {
-                        await loadComments(p.id, 1, true);
-                    }
-                }
-                
-                updateAllLikeButtons();
                 
                 if (btn) {
                     if (currentDisplayCount >= displayedPosts.length) {
@@ -2167,14 +1937,9 @@
             }
         };
 
-        function renderArticlePost(post, isHomePage = false) {
+        function renderArticlePost(post) {
             const expanded = expandedPosts.get(post.id) || false;
-            const liked = userLikes.get(post.id) || false;
-            const comments = post.comments || [];
             const isRSS = post.rss === true;
-            
-            // On home page, RSS posts should have no interactions
-            const showInteractions = !(isHomePage && isRSS);
             
             return `
                 <div class="news-item" id="post-${post.id}" onclick="window.open('${post.sourceUrl || '#'}','_blank')">
@@ -2194,40 +1959,10 @@
                             <button class="read-more-btn" style="font-size:0.7rem;" onclick="event.stopPropagation(); toggleReadMore('${post.id}', false, event)">${expanded ? 'less' : 'more'}</button>
                         ` : ''}
                         
-                        ${showInteractions ? `
-                            <div class="interaction-bar" onclick="event.stopPropagation()">
-                                <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
-                                    <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
-                                    <span class="like-count">${post.likes || 0}</span>
-                                </div>
-                                <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
-                                    <i class="ph ph-chat-circle"></i>
-                                    <span id="comment-count-${post.id}">${comments.length}</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Comments Section (only for non-RSS posts) -->
-                            <div class="comments-section" id="comments-${post.id}" style="display: none;" onclick="event.stopPropagation()">
-                                <div class="comment-input-area">
-                                    <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${post.id}')">
-                                    <span class="comment-char-count">150/150</span>
-                                    <button class="comment-submit" onclick="addComment('${post.id}', event)" disabled>Post</button>
-                                </div>
-                                <div class="comments-list" id="comments-list-${post.id}">
-                                    <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
-                                </div>
-                                <div class="load-more-comments" id="load-more-comments-${post.id}" style="display: none;" onclick="loadMoreComments('${post.id}')">
-                                    <i class="ph ph-arrow-down"></i> Load more comments
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        ${!isRSS ? `
-                            <div class="meta-info">
-                                <span><i class="ph ph-clock"></i> ${getRelativeTime(post.createdAt || post.timestamp)}</span>
-                                ${post.featured ? '<span class="article-featured">⭐ Featured</span>' : ''}
-                            </div>
-                        ` : ''}
+                        <div class="meta-info">
+                            <span><i class="ph ph-clock"></i> ${getRelativeTime(post.createdAt || post.timestamp)}</span>
+                            ${post.featured ? '<span class="article-featured">⭐ Featured</span>' : ''}
+                        </div>
                     </div>
                 </div>
             `;
@@ -2236,9 +1971,7 @@
         function renderVideoPost(post) {
             const videoId = getYouTubeVideoId(post.youtubeUrl) || 'dQw4w9WgXcQ';
             const expanded = expandedPosts.get(post.id) || false;
-            const liked = userLikes.get(post.id) || false;
             const played = videoPlayed.get(post.id) || false;
-            const comments = post.comments || [];
             
             return `
                 <div class="video-card" id="post-${post.id}">
@@ -2259,34 +1992,8 @@
                             ` : ''}
                         </div>
                     ` : ''}
-                    <div style="padding:0 15px 15px;">
-                        <div class="interaction-bar" style="margin-top:0;">
-                            <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
-                                <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
-                                <span class="like-count">${post.likes || 0}</span>
-                            </div>
-                            <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
-                                <i class="ph ph-chat-circle"></i>
-                                <span id="comment-count-${post.id}">${comments.length}</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Comments Section -->
-                        <div class="comments-section" id="comments-${post.id}" style="display: none;">
-                            <div class="comment-input-area">
-                                <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${post.id}')">
-                                <span class="comment-char-count">150/150</span>
-                                <button class="comment-submit" onclick="addComment('${post.id}', event)" disabled>Post</button>
-                            </div>
-                            <div class="comments-list" id="comments-list-${post.id}">
-                                <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
-                            </div>
-                            <div class="load-more-comments" id="load-more-comments-${post.id}" style="display: none;" onclick="loadMoreComments('${post.id}')">
-                                <i class="ph ph-arrow-down"></i> Load more comments
-                            </div>
-                        </div>
-                        
-                        <div class="meta-info" style="margin-top:10px;">
+                    <div style="padding:15px;">
+                        <div class="meta-info">
                             <span><i class="ph ph-clock"></i> ${getRelativeTime(post.createdAt || post.timestamp)}</span>
                             ${post.featured ? '<span class="article-featured">⭐ Featured</span>' : ''}
                         </div>
@@ -2299,8 +2006,6 @@
             const el = document.getElementById('featuredSection');
             if (!el) return;
             
-            const liked = userLikes.get(featured.id) || false;
-            const comments = featured.comments || [];
             const isRSS = featured.rss === true;
             
             if (featured.type === 'video') {
@@ -2326,34 +2031,8 @@
                                 ` : ''}
                             </div>
                         ` : ''}
-                        <div style="padding:0 15px 15px;">
-                            <div class="interaction-bar" style="margin-top:0;">
-                                <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${featured.id}', event)">
-                                    <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
-                                    <span class="like-count">${featured.likes || 0}</span>
-                                </div>
-                                <div class="interaction-item" onclick="toggleComments('${featured.id}', event)">
-                                    <i class="ph ph-chat-circle"></i>
-                                    <span id="comment-count-${featured.id}">${comments.length}</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Comments Section -->
-                            <div class="comments-section" id="comments-${featured.id}" style="display: none;">
-                                <div class="comment-input-area">
-                                    <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${featured.id}')">
-                                    <span class="comment-char-count">150/150</span>
-                                    <button class="comment-submit" onclick="addComment('${featured.id}', event)" disabled>Post</button>
-                                </div>
-                                <div class="comments-list" id="comments-list-${featured.id}">
-                                    <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
-                                </div>
-                                <div class="load-more-comments" id="load-more-comments-${featured.id}" style="display: none;" onclick="loadMoreComments('${featured.id}')">
-                                    <i class="ph ph-arrow-down"></i> Load more comments
-                                </div>
-                            </div>
-                            
-                            <div class="meta-info" style="margin-top:10px;">
+                        <div style="padding:15px;">
+                            <div class="meta-info">
                                 <span><i class="ph ph-clock"></i> ${getRelativeTime(featured.createdAt || featured.timestamp)}</span>
                             </div>
                         </div>
@@ -2370,9 +2049,6 @@
                                 <i class="ph ph-newspaper"></i> ${featured.source}
                             </div>
                         ` : ''}
-                        ${!isRSS ? `
-                            <div class="meta-info"><span><i class="ph ph-clock"></i> ${getRelativeTime(featured.createdAt || featured.timestamp)}</span></div>
-                        ` : ''}
                         <div class="featured-content" onclick="event.stopPropagation()">
                             <div class="post-content-container" data-full-content="${(featured.content || '').replace(/"/g, '&quot;')}">
                                 ${expanded ? formatContent(featured.content) : truncateForPreview(featured.content, 150)}
@@ -2383,243 +2059,12 @@
                                 </button>
                             ` : ''}
                         </div>
-                        
-                        ${!isRSS ? `
-                            <div class="interaction-bar" onclick="event.stopPropagation()">
-                                <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${featured.id}', event)">
-                                    <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
-                                    <span class="like-count">${featured.likes || 0}</span>
-                                </div>
-                                <div class="interaction-item" onclick="toggleComments('${featured.id}', event)">
-                                    <i class="ph ph-chat-circle"></i>
-                                    <span id="comment-count-${featured.id}">${comments.length}</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Comments Section -->
-                            <div class="comments-section" id="comments-${featured.id}" style="display: none;" onclick="event.stopPropagation()">
-                                <div class="comment-input-area">
-                                    <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${featured.id}')">
-                                    <span class="comment-char-count">150/150</span>
-                                    <button class="comment-submit" onclick="addComment('${featured.id}', event)" disabled>Post</button>
-                                </div>
-                                <div class="comments-list" id="comments-list-${featured.id}">
-                                    <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
-                                </div>
-                                <div class="load-more-comments" id="load-more-comments-${featured.id}" style="display: none;" onclick="loadMoreComments('${featured.id}')">
-                                    <i class="ph ph-arrow-down"></i> Load more comments
-                                </div>
-                            </div>
-                        ` : ''}
-                        
+                        <div class="meta-info" style="margin-top:10px;">
+                            <span><i class="ph ph-clock"></i> ${getRelativeTime(featured.createdAt || featured.timestamp)}</span>
+                        </div>
                         ${featured.featured ? '<div style="margin-top:10px;"><span class="article-featured">⭐ Featured</span></div>' : ''}
                     </div>
                 `;
-            }
-            
-            if (!isRSS) {
-                await loadComments(featured.id, 1, true);
-            }
-            updateAllLikeButtons();
-        }
-
-        // ============================================
-        // COMMENT FUNCTIONS
-        // ============================================
-        window.toggleComments = function(postId, event) {
-            if (event) event.stopPropagation();
-            if (!currentUser) {
-                pendingAction = { type: 'comment', postId };
-                signInWithGoogle();
-                return;
-            }
-            const section = document.getElementById(`comments-${postId}`);
-            if (section) {
-                const isHidden = section.style.display === 'none' || !section.style.display;
-                section.style.display = isHidden ? 'block' : 'none';
-                if (isHidden) loadComments(postId, 1);
-            }
-        };
-
-        async function loadComments(postId, page = 1, silent = false) {
-            try {
-                const list = document.getElementById(`comments-list-${postId}`);
-                const btn = document.getElementById(`load-more-comments-${postId}`);
-                if (!list) return;
-                
-                if (!silent) {
-                    list.innerHTML = '<div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>';
-                }
-                
-                // Get comments from the post object
-                const post = allPosts.find(p => p.id === postId);
-                if (!post) return;
-                
-                const allComments = post.comments || [];
-                const sortedComments = allComments.sort((a, b) => 
-                    new Date(b.timestamp) - new Date(a.timestamp)
-                );
-
-                const startIndex = (page - 1) * COMMENTS_PER_BATCH;
-                const endIndex = startIndex + COMMENTS_PER_BATCH;
-                const paginatedComments = sortedComments.slice(startIndex, endIndex);
-                
-                let state = commentStates.get(postId) || { page: 1, hasMore: false, comments: [] };
-                state.page = page;
-                state.hasMore = endIndex < sortedComments.length;
-                
-                if (page === 1) {
-                    state.comments = paginatedComments;
-                    list.innerHTML = paginatedComments.length ? paginatedComments.map(c => `
-                        <div class="comment-item">
-                            <div class="comment-header"><span class="comment-author">${c.author}</span><span class="comment-time">${getRelativeTime(c.timestamp)}</span></div>
-                            <div class="comment-text">${c.text}</div>
-                        </div>
-                    `).join('') : '<div style="color:#8a8d91; text-align:center; padding:10px;">No comments yet</div>';
-                } else {
-                    state.comments = [...(state.comments || []), ...paginatedComments];
-                    list.innerHTML += paginatedComments.map(c => `
-                        <div class="comment-item">
-                            <div class="comment-header"><span class="comment-author">${c.author}</span><span class="comment-time">${getRelativeTime(c.timestamp)}</span></div>
-                            <div class="comment-text">${c.text}</div>
-                        </div>
-                    `).join('');
-                }
-                
-                commentStates.set(postId, state);
-                
-                if (btn) btn.style.display = state.hasMore ? 'block' : 'none';
-            } catch (error) {
-                console.error('Error loading comments:', error);
-            }
-        }
-
-        window.loadMoreComments = async function(postId) {
-            const state = commentStates.get(postId) || { page: 1 };
-            await loadComments(postId, (state.page || 1) + 1);
-        };
-
-        window.addComment = async function(postId, event) {
-            if (event) event.stopPropagation();
-            if (!currentUser) {
-                const input = document.querySelector(`#comments-${postId} .comment-input`);
-                const text = input?.value.trim() || '';
-                pendingAction = { type: 'comment', postId, text };
-                signInWithGoogle();
-                return;
-            }
-            const input = document.querySelector(`#comments-${postId} .comment-input`);
-            const text = input.value.trim();
-            if (!text) return;
-            
-            try {
-                // Create new comment
-                const newComment = {
-                    id: Date.now().toString(),
-                    text: text,
-                    author: currentUser.displayName || 'Anonymous',
-                    authorId: currentUser.uid,
-                    timestamp: new Date().toISOString()
-                };
-                
-                // Update local state
-                const post = allPosts.find(p => p.id === postId);
-                if (post) {
-                    post.comments = post.comments || [];
-                    post.comments.unshift(newComment);
-                    
-                    // Update UI
-                    input.value = '';
-                    updateCharCount(postId);
-                    
-                    // Update comment count
-                    const countSpan = document.getElementById(`comment-count-${postId}`);
-                    if (countSpan) {
-                        countSpan.textContent = post.comments.length;
-                    }
-                    
-                    // Reload comments
-                    await loadComments(postId, 1);
-                    
-                    // TODO: Save to Firebase when you have backend setup
-                    // For now, comments will persist in memory but not across refreshes
-                    console.log('Comment added (not saved to Firebase yet):', newComment);
-                }
-            } catch (error) {
-                console.error('Error adding comment:', error);
-                showPopup('Error', 'Failed to add comment');
-            }
-        };
-
-        window.updateCharCount = function(postId) {
-            const input = document.querySelector(`#comments-${postId} .comment-input`);
-            const count = document.querySelector(`#comments-${postId} .comment-char-count`);
-            const btn = document.querySelector(`#comments-${postId} .comment-submit`);
-            if (input && count && btn) {
-                const remaining = 150 - input.value.length;
-                count.textContent = `${remaining}/150`;
-                btn.disabled = remaining < 0 || remaining === 150 || !input.value.trim();
-            }
-        };
-
-        // ============================================
-        // LIKE FUNCTIONS
-        // ============================================
-        window.toggleLike = function(postId, event) {
-            if (event) event.stopPropagation();
-            if (!currentUser) {
-                pendingAction = { type: 'like', postId };
-                signInWithGoogle();
-                return;
-            }
-            handleLike(postId);
-        };
-
-        async function handleLike(postId) {
-            try {
-                const post = allPosts.find(p => p.id === postId);
-                if (!post || post.rss) return; // Don't allow liking RSS posts
-                
-                const liked = userLikes.get(postId) || false;
-                
-                // Update local state immediately for UI feedback
-                userLikes.set(postId, !liked);
-                
-                if (!liked) {
-                    post.likes = (post.likes || 0) + 1;
-                    post.likedBy = post.likedBy || [];
-                    post.likedBy.push(currentUser.uid);
-                } else {
-                    post.likes = Math.max(0, (post.likes || 0) - 1);
-                    post.likedBy = (post.likedBy || []).filter(id => id !== currentUser.uid);
-                }
-                
-                // Update UI
-                const postElement = document.getElementById(`post-${postId}`);
-                if (postElement) {
-                    const likeBtn = postElement.querySelector('.like-btn');
-                    const likeIcon = likeBtn?.querySelector('i');
-                    const likeCount = postElement.querySelector('.like-count');
-                    
-                    if (likeBtn && likeIcon && likeCount) {
-                        if (!liked) {
-                            likeBtn.classList.add('liked');
-                            likeIcon.className = 'ph-fill ph-heart';
-                        } else {
-                            likeBtn.classList.remove('liked');
-                            likeIcon.className = 'ph ph-heart';
-                        }
-                        likeCount.textContent = post.likes;
-                    }
-                }
-                
-                // TODO: Save to Firebase when you have backend setup
-                // For now, likes will persist in memory but not across refreshes
-                console.log('Like toggled (not saved to Firebase yet):', postId, !liked);
-                
-            } catch (error) {
-                console.error('Error liking post:', error);
-                showPopup('Error', 'Failed to like post');
             }
         }
 
@@ -2695,15 +2140,7 @@
                 list.innerHTML = '<div class="loading">No results found</div>';
                 return;
             }
-            list.innerHTML = filtered.map(p => p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p, true)).join('');
-            
-            for (const p of filtered) {
-                if (!p.rss) {
-                    await loadComments(p.id, 1, true);
-                }
-            }
-            
-            updateAllLikeButtons();
+            list.innerHTML = filtered.map(p => p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p)).join('');
         }
 
         window.clearSearch = function() {
