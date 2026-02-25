@@ -1280,9 +1280,34 @@
 
     <script type="module">
         // ============================================
-        // API CONFIGURATION - NO FIREBASE HERE!
+        // API CONFIGURATION
         // ============================================
         const API_BASE = 'https://lyteit-backend.vercel.app/api';
+
+        // ============================================
+        // FIREBASE AUTH (for Google Sign-In only)
+        // ============================================
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            signOut,
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWsW8NaC-fs50D1hXganYW9gPCDUXRaMc",
+            authDomain: "lyteit.firebaseapp.com",
+            projectId: "lyteit",
+            storageBucket: "lyteit.firebasestorage.app",
+            messagingSenderId: "173900972036",
+            appId: "1:173900972036:web:1bd22a25176bf5a716b551"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
 
         // ============================================
         // APP STATE
@@ -1300,22 +1325,15 @@
         const POSTS_PER_BATCH = 3;
         let featuredPost = null;
 
-        // Comment lazy loading states
+        // Comment states
         const commentStates = new Map();
         const COMMENTS_PER_BATCH = 5;
-
-        // Search mode flag
         let isSearching = false;
-
-        // Video play states
         const videoPlayed = new Map();
-
-        // User ID for likes (stored locally)
-        const userId = localStorage.getItem('userId') || 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('userId', userId);
+        const expandedPosts = new Map();
 
         // ============================================
-        // TRENDING TOPICS (Static for now)
+        // TRENDING TOPICS
         // ============================================
         const trendingTopics = [
             { topic: "#BitcoinHalving", posts: "2.3K", icon: "ph-lightning" },
@@ -1327,227 +1345,97 @@
         ];
 
         // ============================================
-        // EXPLORE PAGE DATA (Financial & Crypto Resources)
+        // EXPLORE PAGE DATA
         // ============================================
         const exploreResources = [
-            // News & Media
-            {
-                name: "CoinTelegraph",
-                description: "Breaking news, expert analysis, and in-depth features on cryptocurrency and blockchain technology.",
-                url: "https://cointelegraph.com",
-                category: "News",
-                icon: "ph-newspaper"
-            },
-            {
-                name: "CoinDesk",
-                description: "Leading digital media platform for crypto news, events, and data. Trusted source since 2013.",
-                url: "https://coindesk.com",
-                category: "News",
-                icon: "ph-newspaper"
-            },
-            {
-                name: "Bloomberg",
-                description: "Global financial markets news, data, and analysis.",
-                url: "https://bloomberg.com",
-                category: "News",
-                icon: "ph-newspaper"
-            },
-            {
-                name: "Reuters",
-                description: "International financial news and market updates.",
-                url: "https://reuters.com",
-                category: "News",
-                icon: "ph-newspaper"
-            },
-            {
-                name: "Financial Times",
-                description: "In-depth financial analysis and global business news.",
-                url: "https://ft.com",
-                category: "News",
-                icon: "ph-newspaper"
-            },
-            // Data & Analysis
-            {
-                name: "CoinMarketCap",
-                description: "Live cryptocurrency prices, charts, and market data. Track top coins by market cap.",
-                url: "https://coinmarketcap.com",
-                category: "Data",
-                icon: "ph-chart-line"
-            },
-            {
-                name: "CoinGecko",
-                description: "Comprehensive crypto data platform with prices, volume, and community metrics.",
-                url: "https://coingecko.com",
-                category: "Data",
-                icon: "ph-chart-line"
-            },
-            {
-                name: "TradingView",
-                description: "Advanced charts and technical analysis for financial markets.",
-                url: "https://tradingview.com",
-                category: "Data",
-                icon: "ph-chart-line"
-            },
-            {
-                name: "Yahoo Finance",
-                description: "Stock market data, news, and financial information.",
-                url: "https://finance.yahoo.com",
-                category: "Data",
-                icon: "ph-chart-line"
-            },
-            // Education
-            {
-                name: "Investopedia",
-                description: "Financial education - learn about investing, markets, and terminology.",
-                url: "https://investopedia.com",
-                category: "Education",
-                icon: "ph-book-open"
-            },
-            {
-                name: "Bitcoin.org",
-                description: "Official Bitcoin resource. Beginner guides, whitepaper, and development updates.",
-                url: "https://bitcoin.org",
-                category: "Education",
-                icon: "ph-book-open"
-            },
-            {
-                name: "Ethereum.org",
-                description: "Official Ethereum portal. Learn about ETH, smart contracts, and Web3.",
-                url: "https://ethereum.org",
-                category: "Education",
-                icon: "ph-book-open"
-            },
-            // Video & Podcasts
-            {
-                name: "CoinBureau (YouTube)",
-                description: "In-depth crypto reviews, tutorials, and market analysis videos.",
-                url: "https://youtube.com/@coinbureau",
-                category: "Video",
-                icon: "ph-youtube-logo"
-            },
-            {
-                name: "Bankless Podcast",
-                description: "DeFi and crypto culture discussions with industry leaders.",
-                url: "https://bankless.com",
-                category: "Video",
-                icon: "ph-headphones"
-            },
-            {
-                name: "Bloomberg Markets",
-                description: "Financial news coverage and market analysis.",
-                url: "https://bloomberg.com/markets",
-                category: "Video",
-                icon: "ph-youtube-logo"
-            }
+            { name: "CoinTelegraph", description: "Breaking news on cryptocurrency.", url: "https://cointelegraph.com", category: "News", icon: "ph-newspaper" },
+            { name: "CoinDesk", description: "Leading digital media for crypto.", url: "https://coindesk.com", category: "News", icon: "ph-newspaper" },
+            { name: "Bloomberg", description: "Global financial markets news.", url: "https://bloomberg.com", category: "News", icon: "ph-newspaper" },
+            { name: "CoinMarketCap", description: "Live crypto prices and market data.", url: "https://coinmarketcap.com", category: "Data", icon: "ph-chart-line" },
+            { name: "CoinGecko", description: "Comprehensive crypto data platform.", url: "https://coingecko.com", category: "Data", icon: "ph-chart-line" },
+            { name: "Investopedia", description: "Financial education and terms.", url: "https://investopedia.com", category: "Education", icon: "ph-book-open" }
         ];
 
-        // ============================================
-        // PLAY ICON REDIRECT (Change this to your desired URL)
-        // ============================================
-        const PLAY_ICON_URL = "https://example.com"; // ← CHANGE THIS TO YOUR LINK
+        const PLAY_ICON_URL = "https://example.com";
 
         // ============================================
-        // TEXT FORMATTING HELPER FUNCTIONS
+        // HELPER FUNCTIONS
         // ============================================
         
-        // Function to extract YouTube video ID from URL
         function getYouTubeVideoId(url) {
             if (!url) return null;
-            
-            const patterns = [
-                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
-                /youtube\.com\/watch\?.*v=([^&\n?#]+)/
-            ];
-            
-            for (const pattern of patterns) {
-                const match = url.match(pattern);
-                if (match) return match[1];
-            }
-            
-            return null;
+            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/);
+            return match ? match[1] : null;
         }
 
-        // Function to convert URLs to clickable links
         function makeLinksClickable(text) {
             if (!text) return '';
-            
             const urlPattern = /(\b(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))/gi;
-            
-            return text.replace(urlPattern, function(url) {
+            return text.replace(urlPattern, (url) => {
                 let href = url;
-                if (!href.match(/^https?:\/\//i)) {
-                    href = 'http://' + href;
-                }
+                if (!href.match(/^https?:\/\//i)) href = 'http://' + href;
                 return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
             });
         }
 
-        // Function to format text with paragraphs and clickable links
         function formatContent(text) {
             if (!text) return '';
-            
             const withLinks = makeLinksClickable(text);
-            const paragraphs = withLinks.split(/\n\s*\n/);
-            
-            return paragraphs.map(paragraph => {
-                if (!paragraph.trim()) return '';
-                
-                const lines = paragraph.split('\n');
-                const formattedLines = lines.map(line => line.trim()).filter(line => line.length > 0);
-                
-                if (formattedLines.length === 0) return '';
-                if (formattedLines.length === 1) return `<p>${formattedLines[0]}</p>`;
-                
-                return `<p>${formattedLines.join('<br>')}</p>`;
+            return withLinks.split(/\n\s*\n/).map(para => {
+                if (!para.trim()) return '';
+                const lines = para.split('\n').map(l => l.trim()).filter(l => l);
+                if (lines.length === 0) return '';
+                if (lines.length === 1) return `<p>${lines[0]}</p>`;
+                return `<p>${lines.join('<br>')}</p>`;
             }).join('');
         }
 
-        // Function for truncated preview
         function truncateForPreview(text, limit = 150) {
             if (!text) return '';
-            
-            const plainText = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-            
-            if (plainText.length <= limit) {
-                return formatContent(text);
+            const plain = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+            if (plain.length <= limit) return formatContent(text);
+            return `<p>${plain.substring(0, limit).split(' ').slice(0, -1).join(' ')}...</p>`;
+        }
+
+        function getRelativeTime(timestamp) {
+            if (!timestamp) return 'Just now';
+            try {
+                let postDate;
+                if (timestamp && typeof timestamp === 'object' && timestamp.seconds) {
+                    postDate = new Date(timestamp.seconds * 1000);
+                } else if (timestamp.toDate) {
+                    postDate = timestamp.toDate();
+                } else if (typeof timestamp === 'string') {
+                    postDate = new Date(timestamp);
+                } else if (typeof timestamp === 'number') {
+                    postDate = new Date(timestamp);
+                } else if (timestamp && timestamp._seconds) {
+                    postDate = new Date(timestamp._seconds * 1000);
+                } else {
+                    return 'Just now';
+                }
+                if (isNaN(postDate.getTime())) return 'Just now';
+                
+                const diff = Math.floor((new Date() - postDate) / 60000);
+                if (diff < 1) return 'Just now';
+                if (diff < 60) return `${diff} minute${diff > 1 ? 's' : ''} ago`;
+                if (diff < 1440) return `${Math.floor(diff / 60)} hour${Math.floor(diff / 60) > 1 ? 's' : ''} ago`;
+                if (diff < 10080) return `${Math.floor(diff / 1440)} day${Math.floor(diff / 1440) > 1 ? 's' : ''} ago`;
+                return postDate.toLocaleDateString();
+            } catch {
+                return 'Just now';
             }
-            
-            const truncatedPlain = plainText.substring(0, limit).split(' ').slice(0, -1).join(' ') + '...';
-            
-            return `<p>${truncatedPlain}</p>`;
         }
 
         // ============================================
-        // VIDEO PLAY FUNCTION
-        // ============================================
-        window.playVideo = function(videoId, event) {
-            if (event) {
-                event.stopPropagation();
-            }
-            
-            const videoContainer = document.getElementById(`video-${videoId}`);
-            if (!videoContainer) return;
-            
-            const overlay = videoContainer.querySelector('.video-play-overlay');
-            const iframe = videoContainer.querySelector('iframe');
-            
-            if (overlay && iframe) {
-                overlay.classList.add('hidden');
-                const src = iframe.src;
-                iframe.src = src + (src.includes('?') ? '&' : '?') + 'autoplay=1';
-                videoPlayed.set(videoId, true);
-            }
-        };
-
-        // ============================================
-        // API CALLS (instead of direct Firebase)
+        // API CALLS
         // ============================================
         
         async function fetchPosts() {
             try {
-                const response = await fetch(`${API_BASE}/posts`);
-                if (!response.ok) throw new Error('Failed to fetch posts');
-                return await response.json();
+                const res = await fetch(`${API_BASE}/posts`);
+                if (!res.ok) throw new Error('Failed');
+                return await res.json();
             } catch (error) {
                 console.error('Error fetching posts:', error);
                 return [];
@@ -1555,33 +1443,99 @@
         }
 
         async function likePost(postId) {
-            try {
-                const response = await fetch(`${API_BASE}/like`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postId, userId })
-                });
-                if (!response.ok) throw new Error('Failed to like post');
-                return await response.json();
-            } catch (error) {
-                console.error('Error liking post:', error);
-                throw error;
+            const res = await fetch(`${API_BASE}/like`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId, userId: currentUser?.uid })
+            });
+            if (!res.ok) throw new Error('Failed to like');
+            return await res.json();
+        }
+
+        async function addComment(postId, text) {
+            const res = await fetch(`${API_BASE}/comment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    postId, 
+                    userId: currentUser?.uid,
+                    userName: currentUser?.displayName || 'Anonymous',
+                    text 
+                })
+            });
+            if (!res.ok) throw new Error('Failed to add comment');
+            return await res.json();
+        }
+
+        async function fetchComments(postId, page = 1) {
+            const res = await fetch(`${API_BASE}/comments/${postId}?page=${page}&limit=${COMMENTS_PER_BATCH}`);
+            if (!res.ok) throw new Error('Failed to fetch comments');
+            return await res.json();
+        }
+
+        // ============================================
+        // AUTH STATE OBSERVER
+        // ============================================
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            updateUserProfile();
+            if (pendingAction && user) {
+                const { type, postId, text } = pendingAction;
+                if (type === 'like') handleLike(postId);
+                else if (type === 'comment') {
+                    const input = document.querySelector(`#comments-${postId} .comment-input`);
+                    if (input) input.focus();
+                }
+                pendingAction = null;
+            }
+        });
+
+        function updateUserProfile() {
+            const container = document.getElementById('userProfileContainer');
+            if (!container) return;
+            if (currentUser) {
+                container.innerHTML = `
+                    <div class="user-profile">
+                        ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" class="user-avatar">` : `<div class="user-avatar">${(currentUser.displayName || 'U').charAt(0)}</div>`}
+                        <span class="user-name">${(currentUser.displayName || 'User').split(' ')[0]}</span>
+                        <div class="user-dropdown">
+                            <div class="dropdown-item"><i class="ph ph-user-circle"></i> ${currentUser.displayName || 'User'}</div>
+                            <div class="dropdown-item"><i class="ph ph-envelope"></i> ${currentUser.email || ''}</div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-item" onclick="handleSignOut()"><i class="ph ph-sign-out"></i> Sign Out</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `<button class="sign-in-btn" onclick="signInWithGoogle()"><i class="ph ph-google-logo"></i> Sign In</button>`;
             }
         }
+
+        window.signInWithGoogle = async () => {
+            try {
+                await signInWithPopup(auth, provider);
+                showPopup('Welcome!', 'Signed in successfully');
+            } catch (error) {
+                showPopup('Error', 'Failed to sign in');
+            }
+        };
+
+        window.handleSignOut = async () => {
+            try {
+                await signOut(auth);
+                showPopup('Signed Out', 'See you next time!');
+            } catch (error) {
+                showPopup('Error', 'Failed to sign out');
+            }
+        };
 
         // ============================================
         // NAVIGATION
         // ============================================
         window.navigateTo = function(page) {
             currentPage = page;
-            
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             document.getElementById(`nav-${page}`)?.classList.add('active');
-            
-            isSearching = false;
-            searchTerm = '';
             
             const homeSearch = document.getElementById('homeSearch');
             const homeTrending = document.getElementById('homeTrending');
@@ -1593,18 +1547,10 @@
             } else {
                 homeSearch.style.display = 'none';
                 homeTrending.style.display = 'none';
-                
-                if (page === 'explore') {
-                    loadExplorePage();
-                } else if (page === 'markets') {
-                    loadMarketsPage();
-                } else if (page === 'play') {
-                    window.open(PLAY_ICON_URL, '_blank');
-                    navigateTo('home');
-                } else if (page === 'menu') {
-                    showPopup('Menu', 'This feature is coming soon!');
-                    navigateTo('home');
-                }
+                if (page === 'explore') loadExplorePage();
+                else if (page === 'markets') loadMarketsPage();
+                else if (page === 'play') { window.open(PLAY_ICON_URL, '_blank'); navigateTo('home'); }
+                else if (page === 'menu') { showPopup('Menu', 'Coming soon!'); navigateTo('home'); }
             }
         };
 
@@ -1613,149 +1559,94 @@
         // ============================================
         function getHomePageHTML() {
             return `
-                <div class="page-indicator">
-                    <i class="ph ph-house"></i> Home
-                </div>
+                <div class="page-indicator"><i class="ph ph-house"></i> Home</div>
                 <div id="searchResultsHeader" class="search-results-header" style="display: none;"></div>
                 <div id="featuredSection"></div>
                 <div class="news-list" id="newsList"></div>
                 <div class="load-more-container" id="loadMoreContainer">
-                    <button class="load-more-btn" id="loadMoreBtn" onclick="loadMorePosts()">
-                        <i class="ph ph-arrow-down"></i>
-                        View More
-                    </button>
+                    <button class="load-more-btn" id="loadMoreBtn" onclick="loadMorePosts()"><i class="ph ph-arrow-down"></i> View More</button>
                 </div>
             `;
         }
 
         async function loadHomePage() {
-            const contentEl = document.getElementById('mainContent');
-            contentEl.innerHTML = getHomePageHTML();
-            
+            document.getElementById('mainContent').innerHTML = getHomePageHTML();
             try {
-                // Fetch posts from your API instead of Firebase directly
                 allPosts = await fetchPosts();
-
                 if (allPosts.length === 0) {
-                    document.getElementById('featuredSection').innerHTML = '<div class="loading"><i class="ph ph-newspaper"></i><br>No news yet. Check back soon!</div>';
+                    document.getElementById('featuredSection').innerHTML = '<div class="loading">No news yet</div>';
                     document.getElementById('loadMoreContainer').style.display = 'none';
                     return;
                 }
-
-                const featuredPosts = allPosts.filter(post => post.featured === true);
-                if (featuredPosts.length > 0) {
-                    featuredPost = featuredPosts[Math.floor(Math.random() * featuredPosts.length)];
-                } else {
-                    featuredPost = allPosts[Math.floor(Math.random() * allPosts.length)];
-                }
-
-                displayedPosts = allPosts.filter(post => post.id !== featuredPost.id);
+                const featured = allPosts.filter(p => p.featured === true);
+                featuredPost = featured.length ? featured[Math.floor(Math.random() * featured.length)] : allPosts[Math.floor(Math.random() * allPosts.length)];
+                displayedPosts = allPosts.filter(p => p.id !== featuredPost.id);
                 currentDisplayCount = 0;
-                
                 await renderFeaturedPost(featuredPost);
                 await loadMorePosts(true);
                 setupSearch();
-                
             } catch (error) {
-                console.error('Error loading initial posts:', error);
-                document.getElementById('featuredSection').innerHTML = '<div class="loading" style="color: #ff5252;"><i class="ph ph-warning"></i><br>Error loading news. Please refresh.</div>';
+                document.getElementById('featuredSection').innerHTML = '<div class="loading" style="color:#ff5252;">Error loading news</div>';
             }
         }
 
-        // Load more posts
         window.loadMorePosts = async function(reset = false) {
             if (isSearching) return;
-            
-            const loadMoreBtn = document.getElementById('loadMoreBtn');
-            const newsListEl = document.getElementById('newsList');
-            
-            if (!newsListEl) return;
-            
-            if (loadMoreBtn) {
-                loadMoreBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Loading...';
-                loadMoreBtn.disabled = true;
-            }
-            
+            const btn = document.getElementById('loadMoreBtn');
+            const list = document.getElementById('newsList');
+            if (!list) return;
+            if (btn) { btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Loading...'; btn.disabled = true; }
             try {
-                const startIndex = reset ? 0 : currentDisplayCount;
-                const endIndex = startIndex + POSTS_PER_BATCH;
-                const postsToShow = displayedPosts.slice(startIndex, endIndex);
-                
-                if (postsToShow.length === 0) {
-                    document.getElementById('loadMoreContainer').style.display = 'none';
-                    return;
-                }
-                
-                currentDisplayCount = endIndex;
-                
-                let html = reset ? '' : newsListEl.innerHTML;
-                
-                for (const post of postsToShow) {
-                    if (post.type === 'video') {
-                        html += renderVideoPost(post);
-                    } else {
-                        html += renderArticlePost(post);
-                    }
-                }
-
-                newsListEl.innerHTML = html;
-                
-                if (loadMoreBtn) {
+                const start = reset ? 0 : currentDisplayCount;
+                const end = start + POSTS_PER_BATCH;
+                const posts = displayedPosts.slice(start, end);
+                if (posts.length === 0) { document.getElementById('loadMoreContainer').style.display = 'none'; return; }
+                currentDisplayCount = end;
+                let html = reset ? '' : list.innerHTML;
+                for (const p of posts) html += p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p);
+                list.innerHTML = html;
+                if (btn) {
                     if (currentDisplayCount >= displayedPosts.length) {
-                        loadMoreBtn.innerHTML = '<i class="ph ph-check-circle"></i> All Posts Loaded';
-                        loadMoreBtn.disabled = true;
+                        btn.innerHTML = '<i class="ph ph-check-circle"></i> All Posts Loaded';
+                        btn.disabled = true;
                     } else {
-                        loadMoreBtn.innerHTML = '<i class="ph ph-arrow-down"></i> View More';
-                        loadMoreBtn.disabled = false;
+                        btn.innerHTML = '<i class="ph ph-arrow-down"></i> View More';
+                        btn.disabled = false;
                     }
                 }
-                
             } catch (error) {
-                console.error('Error loading more posts:', error);
-                if (loadMoreBtn) {
-                    loadMoreBtn.innerHTML = '<i class="ph ph-arrow-down"></i> Try Again';
-                    loadMoreBtn.disabled = false;
-                }
+                if (btn) { btn.innerHTML = '<i class="ph ph-arrow-down"></i> Try Again'; btn.disabled = false; }
             }
         };
 
         function renderArticlePost(post) {
-            const isExpanded = expandedPosts.get(post.id) || false;
-            const content = post.content || '';
-            const postTime = getRelativeTime(post.createdAt || post.timestamp);
-            const isLiked = userLikes.get(post.id) || false;
-
+            const expanded = expandedPosts.get(post.id) || false;
+            const liked = userLikes.get(post.id) || false;
             return `
                 <div class="news-item" id="post-${post.id}">
-                    <img src="${post.image}" class="news-item-img" onerror="this.src='https://images.unsplash.com/photo-1621761126064-fdd80772bc22?auto=format&fit=crop&q=60&w=200'">
+                    <img src="${post.image}" class="news-item-img" onerror="this.src='https://images.unsplash.com/photo-1621761126064-fdd80772bc22'">
                     <div class="news-item-content">
                         <div class="news-item-title">${post.title}</div>
-                        ${content ? `
-                            <div class="post-content-container" data-full-content="${content.replace(/"/g, '&quot;')}">
-                                ${isExpanded ? formatContent(content) : truncateForPreview(content, 100)}
-                            </div>
-                            ${content.length > 100 ? `
-                                <button class="read-more-btn" style="font-size: 0.7rem; padding: 2px 0;" onclick="toggleReadMore('${post.id}', false, event)">
-                                    ${isExpanded ? 'less' : 'more'}
-                                </button>
-                            ` : ''}
+                        <div class="post-content-container" data-full-content="${(post.content || '').replace(/"/g, '&quot;')}">
+                            ${expanded ? formatContent(post.content) : truncateForPreview(post.content, 100)}
+                        </div>
+                        ${(post.content || '').length > 100 ? `
+                            <button class="read-more-btn" style="font-size:0.7rem;" onclick="toggleReadMore('${post.id}', false, event)">${expanded ? 'less' : 'more'}</button>
                         ` : ''}
-                        
                         <div class="interaction-bar">
-                            <div class="interaction-item like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
-                                <i class="ph ${isLiked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
+                            <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
+                                <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
                                 <span class="like-count">${post.likes || 0}</span>
                             </div>
                             <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
                                 <i class="ph ph-chat-circle"></i>
-                                <span>${post.comments?.length || 0}</span>
+                                <span id="comment-count-${post.id}">${post.comments?.length || 0}</span>
                             </div>
                         </div>
-
                         <div class="meta-info">
-                            <span><i class="ph ph-clock"></i> ${postTime}</span>
+                            <span><i class="ph ph-clock"></i> ${getRelativeTime(post.createdAt || post.timestamp)}</span>
+                            ${post.featured ? '<span class="article-featured">⭐ Featured</span>' : ''}
                         </div>
-                        ${post.featured ? '<span style="background: #fab00520; color: #fab005; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem;">Featured</span>' : ''}
                     </div>
                 </div>
             `;
@@ -1763,60 +1654,42 @@
 
         function renderVideoPost(post) {
             const videoId = getYouTubeVideoId(post.youtubeUrl) || 'dQw4w9WgXcQ';
-            const isExpanded = expandedPosts.get(post.id) || false;
-            const description = post.description || '';
-            const postTime = getRelativeTime(post.createdAt || post.timestamp);
-            const isLiked = userLikes.get(post.id) || false;
-            const hasBeenPlayed = videoPlayed.get(post.id) || false;
-
+            const expanded = expandedPosts.get(post.id) || false;
+            const liked = userLikes.get(post.id) || false;
+            const played = videoPlayed.get(post.id) || false;
             return `
                 <div class="video-card" id="post-${post.id}">
-                    <div class="video-header">
-                        <i class="ph-fill ph-youtube-logo"></i>
-                        <div class="video-title">${post.title}</div>
-                    </div>
-                    
+                    <div class="video-header"><i class="ph-fill ph-youtube-logo"></i><div class="video-title">${post.title}</div></div>
                     <div class="video-container" id="video-${post.id}" onclick="playVideo('${post.id}', event)">
-                        <iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1" 
-                                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen>
-                        </iframe>
-                        <div class="video-play-overlay ${hasBeenPlayed ? 'hidden' : ''}">
-                            <div class="video-play-button">
-                                <i class="ph-fill ph-play"></i>
-                            </div>
-                        </div>
+                        <iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1" allowfullscreen></iframe>
+                        <div class="video-play-overlay ${played ? 'hidden' : ''}"><div class="video-play-button"><i class="ph-fill ph-play"></i></div></div>
                     </div>
-
-                    ${description ? `
+                    ${post.description ? `
                         <div class="video-description">
-                            <div class="post-content-container" data-full-content="${description.replace(/"/g, '&quot;')}">
-                                ${isExpanded ? formatContent(description) : truncateForPreview(description, 150)}
+                            <div class="post-content-container" data-full-content="${(post.description || '').replace(/"/g, '&quot;')}">
+                                ${expanded ? formatContent(post.description) : truncateForPreview(post.description, 150)}
                             </div>
-                            ${description.length > 150 ? `
-                                <button class="read-more-btn" style="margin-top: 10px;" onclick="toggleReadMore('${post.id}', false, event)">
-                                    ${isExpanded ? 'Show less' : 'Read more'} 
-                                    <i class="ph ${isExpanded ? 'ph-arrow-up' : 'ph-arrow-down'}"></i>
+                            ${post.description.length > 150 ? `
+                                <button class="read-more-btn" style="margin-top:10px;" onclick="toggleReadMore('${post.id}', false, event)">
+                                    ${expanded ? 'Show less' : 'Read more'}
                                 </button>
                             ` : ''}
                         </div>
                     ` : ''}
-
-                    <div style="padding: 0 15px 15px;">
-                        <div class="interaction-bar" style="margin-top: 0;">
-                            <div class="interaction-item like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
-                                <i class="ph ${isLiked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
+                    <div style="padding:0 15px 15px;">
+                        <div class="interaction-bar" style="margin-top:0;">
+                            <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${post.id}', event)">
+                                <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
                                 <span class="like-count">${post.likes || 0}</span>
                             </div>
                             <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
                                 <i class="ph ph-chat-circle"></i>
-                                <span>${post.comments?.length || 0}</span>
+                                <span id="comment-count-${post.id}">${post.comments?.length || 0}</span>
                             </div>
                         </div>
-
-                        <div class="meta-info" style="margin-top: 10px;">
-                            <span><i class="ph ph-clock"></i> ${postTime}</span>
-                            ${post.featured ? '<span style="background: #fab00520; color: #fab005; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem;">Featured</span>' : ''}
+                        <div class="meta-info" style="margin-top:10px;">
+                            <span><i class="ph ph-clock"></i> ${getRelativeTime(post.createdAt || post.timestamp)}</span>
+                            ${post.featured ? '<span class="article-featured">⭐ Featured</span>' : ''}
                         </div>
                     </div>
                 </div>
@@ -1824,120 +1697,245 @@
         }
 
         async function renderFeaturedPost(featured) {
-            const featuredEl = document.getElementById('featuredSection');
-            if (!featuredEl) return;
-            
+            const el = document.getElementById('featuredSection');
+            if (!el) return;
             if (featured.type === 'video') {
                 const videoId = getYouTubeVideoId(featured.youtubeUrl) || 'dQw4w9WgXcQ';
-                const isExpanded = expandedPosts.get(featured.id) || false;
-                const description = featured.description || '';
-                const featuredTime = getRelativeTime(featured.createdAt || featured.timestamp);
-                const isFeaturedLiked = userLikes.get(featured.id) || false;
-                const hasBeenPlayed = videoPlayed.get(featured.id) || false;
-
-                featuredEl.innerHTML = `
+                const expanded = expandedPosts.get(featured.id) || false;
+                const liked = userLikes.get(featured.id) || false;
+                const played = videoPlayed.get(featured.id) || false;
+                el.innerHTML = `
                     <div class="video-card" id="post-${featured.id}">
-                        <div class="video-header">
-                            <i class="ph-fill ph-youtube-logo"></i>
-                            <div class="video-title">${featured.title}</div>
-                        </div>
-                        
+                        <div class="video-header"><i class="ph-fill ph-youtube-logo"></i><div class="video-title">${featured.title}</div></div>
                         <div class="video-container" id="video-${featured.id}" onclick="playVideo('${featured.id}', event)">
-                            <iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1" 
-                                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowfullscreen>
-                            </iframe>
-                            <div class="video-play-overlay ${hasBeenPlayed ? 'hidden' : ''}">
-                                <div class="video-play-button">
-                                    <i class="ph-fill ph-play"></i>
-                                </div>
-                            </div>
+                            <iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1" allowfullscreen></iframe>
+                            <div class="video-play-overlay ${played ? 'hidden' : ''}"><div class="video-play-button"><i class="ph-fill ph-play"></i></div></div>
                         </div>
-
-                        ${description ? `
+                        ${featured.description ? `
                             <div class="video-description">
-                                <div class="post-content-container" data-full-content="${description.replace(/"/g, '&quot;')}">
-                                    ${isExpanded ? formatContent(description) : truncateForPreview(description, 150)}
+                                <div class="post-content-container" data-full-content="${(featured.description || '').replace(/"/g, '&quot;')}">
+                                    ${expanded ? formatContent(featured.description) : truncateForPreview(featured.description, 150)}
                                 </div>
-                                ${description.length > 150 ? `
-                                    <button class="read-more-btn" style="margin-top: 10px;" onclick="toggleReadMore('${featured.id}', true, event)">
-                                        ${isExpanded ? 'Show less' : 'Read more'} 
-                                        <i class="ph ${isExpanded ? 'ph-arrow-up' : 'ph-arrow-down'}"></i>
+                                ${featured.description.length > 150 ? `
+                                    <button class="read-more-btn" style="margin-top:10px;" onclick="toggleReadMore('${featured.id}', true, event)">
+                                        ${expanded ? 'Show less' : 'Read more'}
                                     </button>
                                 ` : ''}
                             </div>
                         ` : ''}
-
-                        <div style="padding: 0 15px 15px;">
-                            <div class="interaction-bar" style="margin-top: 0;">
-                                <div class="interaction-item like-btn ${isFeaturedLiked ? 'liked' : ''}" onclick="toggleLike('${featured.id}', event)">
-                                    <i class="ph ${isFeaturedLiked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
+                        <div style="padding:0 15px 15px;">
+                            <div class="interaction-bar" style="margin-top:0;">
+                                <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${featured.id}', event)">
+                                    <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
                                     <span class="like-count">${featured.likes || 0}</span>
                                 </div>
                                 <div class="interaction-item" onclick="toggleComments('${featured.id}', event)">
                                     <i class="ph ph-chat-circle"></i>
-                                    <span>${featured.comments?.length || 0}</span>
+                                    <span id="comment-count-${featured.id}">${featured.comments?.length || 0}</span>
                                 </div>
                             </div>
-
-                            <div class="meta-info" style="margin-top: 10px;">
-                                <span><i class="ph ph-clock"></i> ${featuredTime}</span>
+                            <div class="meta-info" style="margin-top:10px;">
+                                <span><i class="ph ph-clock"></i> ${getRelativeTime(featured.createdAt || featured.timestamp)}</span>
                             </div>
                         </div>
                     </div>
                 `;
             } else {
-                const isFeaturedExpanded = expandedPosts.get(featured.id) || false;
-                const featuredContent = featured.content || '';
-                const featuredTime = getRelativeTime(featured.createdAt || featured.timestamp);
-                const isFeaturedLiked = userLikes.get(featured.id) || false;
-
-                featuredEl.innerHTML = `
+                const expanded = expandedPosts.get(featured.id) || false;
+                const liked = userLikes.get(featured.id) || false;
+                el.innerHTML = `
                     <div class="featured-card" id="post-${featured.id}">
-                        <img src="${featured.image}" class="featured-img" onerror="this.src='https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&q=80&w=1000'">
+                        <img src="${featured.image}" class="featured-img" onerror="this.src='https://images.unsplash.com/photo-1639762681485-074b7f938ba0'">
                         <h1 class="featured-title">${featured.title}</h1>
-                        <div class="meta-info">
-                            <span><i class="ph ph-clock"></i> ${featuredTime}</span>
-                        </div>
-                        ${featuredContent ? `
-                            <div class="featured-content">
-                                <div class="post-content-container" data-full-content="${featuredContent.replace(/"/g, '&quot;')}">
-                                    ${isFeaturedExpanded ? formatContent(featuredContent) : truncateForPreview(featuredContent, 150)}
-                                </div>
-                                ${featuredContent.length > 150 ? `
-                                    <button class="read-more-btn" onclick="toggleReadMore('${featured.id}', true, event)">
-                                        ${isFeaturedExpanded ? 'Show less' : 'Read more'} 
-                                        <i class="ph ${isFeaturedExpanded ? 'ph-arrow-up' : 'ph-arrow-down'}"></i>
-                                    </button>
-                                ` : ''}
+                        <div class="meta-info"><span><i class="ph ph-clock"></i> ${getRelativeTime(featured.createdAt || featured.timestamp)}</span></div>
+                        <div class="featured-content">
+                            <div class="post-content-container" data-full-content="${(featured.content || '').replace(/"/g, '&quot;')}">
+                                ${expanded ? formatContent(featured.content) : truncateForPreview(featured.content, 150)}
                             </div>
-                        ` : ''}
-                        
+                            ${(featured.content || '').length > 150 ? `
+                                <button class="read-more-btn" onclick="toggleReadMore('${featured.id}', true, event)">
+                                    ${expanded ? 'Show less' : 'Read more'}
+                                </button>
+                            ` : ''}
+                        </div>
                         <div class="interaction-bar">
-                            <div class="interaction-item like-btn ${isFeaturedLiked ? 'liked' : ''}" onclick="toggleLike('${featured.id}', event)">
-                                <i class="ph ${isFeaturedLiked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
+                            <div class="interaction-item like-btn ${liked ? 'liked' : ''}" onclick="toggleLike('${featured.id}', event)">
+                                <i class="ph ${liked ? 'ph-fill ph-heart' : 'ph-heart'}"></i>
                                 <span class="like-count">${featured.likes || 0}</span>
                             </div>
                             <div class="interaction-item" onclick="toggleComments('${featured.id}', event)">
                                 <i class="ph ph-chat-circle"></i>
-                                <span>${featured.comments?.length || 0}</span>
+                                <span id="comment-count-${featured.id}">${featured.comments?.length || 0}</span>
                             </div>
                         </div>
-
-                        ${featured.featured ? '<div style="margin-top: 10px;"><span style="background: #fab00520; color: #fab005; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem;">⭐ Featured</span></div>' : ''}
+                        ${featured.featured ? '<div style="margin-top:10px;"><span class="article-featured">⭐ Featured</span></div>' : ''}
                     </div>
                 `;
             }
         }
 
         // ============================================
-        // SEARCH FUNCTIONALITY
+        // COMMENT FUNCTIONS
+        // ============================================
+        window.toggleComments = function(postId, event) {
+            if (event) event.stopPropagation();
+            if (!currentUser) {
+                pendingAction = { type: 'comment', postId };
+                signInWithGoogle();
+                return;
+            }
+            const section = document.getElementById(`comments-${postId}`);
+            if (section) {
+                const isHidden = section.style.display === 'none';
+                section.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) loadComments(postId, 1);
+            }
+        };
+
+        async function loadComments(postId, page = 1) {
+            try {
+                const data = await fetchComments(postId, page);
+                const list = document.getElementById(`comments-list-${postId}`);
+                const btn = document.getElementById(`load-more-comments-${postId}`);
+                if (!list) return;
+                
+                let state = commentStates.get(postId) || { page: 1, hasMore: false };
+                state.page = page;
+                state.hasMore = data.hasMore;
+                commentStates.set(postId, state);
+                
+                if (page === 1) {
+                    list.innerHTML = data.comments.length ? data.comments.map(c => `
+                        <div class="comment-item">
+                            <div class="comment-header"><span class="comment-author">${c.author}</span><span class="comment-time">${c.time}</span></div>
+                            <div class="comment-text">${c.text}</div>
+                        </div>
+                    `).join('') : '<div style="color:#8a8d91; text-align:center; padding:10px;">No comments yet</div>';
+                } else {
+                    list.innerHTML += data.comments.map(c => `
+                        <div class="comment-item">
+                            <div class="comment-header"><span class="comment-author">${c.author}</span><span class="comment-time">${c.time}</span></div>
+                            <div class="comment-text">${c.text}</div>
+                        </div>
+                    `).join('');
+                }
+                
+                if (btn) btn.style.display = data.hasMore ? 'block' : 'none';
+            } catch (error) {
+                console.error('Error loading comments:', error);
+            }
+        }
+
+        window.loadMoreComments = async function(postId) {
+            const state = commentStates.get(postId) || { page: 1 };
+            await loadComments(postId, state.page + 1);
+        };
+
+        window.addComment = async function(postId, event) {
+            if (event) event.stopPropagation();
+            if (!currentUser) {
+                pendingAction = { type: 'comment', postId };
+                signInWithGoogle();
+                return;
+            }
+            const input = document.querySelector(`#comments-${postId} .comment-input`);
+            const text = input.value.trim();
+            if (!text) return;
+            
+            try {
+                await addComment(postId, text);
+                input.value = '';
+                updateCharCount(postId);
+                await loadComments(postId, 1);
+                const countSpan = document.getElementById(`comment-count-${postId}`);
+                if (countSpan) countSpan.textContent = parseInt(countSpan.textContent || '0') + 1;
+            } catch (error) {
+                showPopup('Error', 'Failed to add comment');
+            }
+        };
+
+        window.updateCharCount = function(postId) {
+            const input = document.querySelector(`#comments-${postId} .comment-input`);
+            const count = document.querySelector(`#comments-${postId} .comment-char-count`);
+            const btn = document.querySelector(`#comments-${postId} .comment-submit`);
+            if (input && count && btn) {
+                const remaining = 150 - input.value.length;
+                count.textContent = `${remaining}/150`;
+                btn.disabled = remaining < 0 || remaining === 150 || !input.value.trim();
+            }
+        };
+
+        // ============================================
+        // LIKE FUNCTIONS
+        // ============================================
+        window.toggleLike = function(postId, event) {
+            if (event) event.stopPropagation();
+            if (!currentUser) {
+                pendingAction = { type: 'like', postId };
+                signInWithGoogle();
+                return;
+            }
+            handleLike(postId);
+        };
+
+        async function handleLike(postId) {
+            try {
+                const result = await likePost(postId);
+                if (result.success) {
+                    const post = document.getElementById(`post-${postId}`);
+                    const btn = post?.querySelector('.like-btn');
+                    const count = post?.querySelector('.like-count');
+                    if (btn && count) {
+                        const liked = userLikes.get(postId) || false;
+                        userLikes.set(postId, !liked);
+                        btn.classList.toggle('liked', !liked);
+                        count.textContent = result.likes;
+                    }
+                }
+            } catch (error) {
+                showPopup('Error', 'Failed to like');
+            }
+        }
+
+        // ============================================
+        // VIDEO PLAY FUNCTION
+        // ============================================
+        window.playVideo = function(videoId, event) {
+            if (event) event.stopPropagation();
+            const container = document.getElementById(`video-${videoId}`);
+            if (!container) return;
+            const overlay = container.querySelector('.video-play-overlay');
+            const iframe = container.querySelector('iframe');
+            if (overlay && iframe) {
+                overlay.classList.add('hidden');
+                iframe.src = iframe.src + (iframe.src.includes('?') ? '&' : '?') + 'autoplay=1';
+                videoPlayed.set(videoId, true);
+            }
+        };
+
+        window.toggleReadMore = function(postId, featured, event) {
+            if (event) event.stopPropagation();
+            const expanded = expandedPosts.get(postId) || false;
+            expandedPosts.set(postId, !expanded);
+            const post = document.getElementById(`post-${postId}`);
+            const container = post?.querySelector('.post-content-container');
+            const btn = post?.querySelector('.read-more-btn');
+            if (!container || !btn) return;
+            const full = container.getAttribute('data-full-content');
+            if (expanded) {
+                container.innerHTML = truncateForPreview(full, featured ? 150 : 100);
+                btn.innerHTML = 'Read more <i class="ph ph-arrow-down"></i>';
+            } else {
+                container.innerHTML = formatContent(full);
+                btn.innerHTML = 'Show less <i class="ph ph-arrow-up"></i>';
+            }
+        };
+
+        // ============================================
+        // SEARCH FUNCTIONS
         // ============================================
         function setupSearch() {
-            const searchInput = document.getElementById('searchInput');
-            if (!searchInput) return;
-            
-            searchInput.addEventListener('input', (e) => {
+            document.getElementById('searchInput')?.addEventListener('input', (e) => {
                 const term = e.target.value.toLowerCase().trim();
                 performSearch(term);
             });
@@ -1952,52 +1950,23 @@
                 await loadHomePage();
                 return;
             }
-
             isSearching = true;
-            const lowerTerm = term.toLowerCase();
-            
-            const filteredPosts = allPosts.filter(post => {
-                if (post.type === 'video') {
-                    return post.title.toLowerCase().includes(lowerTerm) || 
-                           (post.description && post.description.toLowerCase().includes(lowerTerm));
-                } else {
-                    return post.title.toLowerCase().includes(lowerTerm) || 
-                           (post.content && post.content.toLowerCase().includes(lowerTerm));
-                }
+            const lower = term.toLowerCase();
+            const filtered = allPosts.filter(p => {
+                if (p.type === 'video') return p.title.toLowerCase().includes(lower) || (p.description || '').toLowerCase().includes(lower);
+                return p.title.toLowerCase().includes(lower) || (p.content || '').toLowerCase().includes(lower);
             });
-
             document.getElementById('featuredSection').style.display = 'none';
             document.getElementById('loadMoreContainer').style.display = 'none';
-            
-            const searchHeader = document.getElementById('searchResultsHeader');
-            searchHeader.style.display = 'block';
-            searchHeader.innerHTML = `
-                Found ${filteredPosts.length} result${filteredPosts.length > 1 ? 's' : ''} for "${term}"
-                <span class="clear-search" onclick="clearSearch()">Clear search</span>
-            `;
-
-            const newsListEl = document.getElementById('newsList');
-            
-            if (filteredPosts.length === 0) {
-                newsListEl.innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px; color: #8a8d91;">
-                        <i class="ph ph-magnifying-glass" style="font-size: 3rem; margin-bottom: 15px;"></i>
-                        <p>No news found matching "${term}"</p>
-                    </div>
-                `;
+            const header = document.getElementById('searchResultsHeader');
+            header.style.display = 'block';
+            header.innerHTML = `Found ${filtered.length} result${filtered.length > 1 ? 's' : ''} for "${term}" <span class="clear-search" onclick="clearSearch()">Clear search</span>`;
+            const list = document.getElementById('newsList');
+            if (!filtered.length) {
+                list.innerHTML = '<div class="loading">No results found</div>';
                 return;
             }
-
-            let html = '';
-            for (const post of filteredPosts) {
-                if (post.type === 'video') {
-                    html += renderVideoPost(post);
-                } else {
-                    html += renderArticlePost(post);
-                }
-            }
-
-            newsListEl.innerHTML = html;
+            list.innerHTML = filtered.map(p => p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p)).join('');
         }
 
         window.clearSearch = function() {
@@ -2010,217 +1979,77 @@
         // EXPLORE PAGE
         // ============================================
         function loadExplorePage() {
-            const contentEl = document.getElementById('mainContent');
-            contentEl.innerHTML = getExplorePageHTML();
-            setupExploreSearch();
-        }
-
-        function getExplorePageHTML() {
-            return `
-                <div class="page-indicator">
-                    <i class="ph ph-compass"></i> Explore · Financial Resources
-                </div>
-                <div class="explore-search">
-                    <div class="search-wrapper">
-                        <i class="ph ph-magnifying-glass search-icon"></i>
-                        <input type="text" class="search-input" id="exploreSearch" placeholder="Search resources...">
+            document.getElementById('mainContent').innerHTML = `
+                <div class="page-indicator"><i class="ph ph-compass"></i> Explore</div>
+                <div class="explore-search"><div class="search-wrapper"><i class="ph ph-magnifying-glass"></i><input type="text" id="exploreSearch" placeholder="Search resources..."></div></div>
+                <div class="explore-grid" id="exploreGrid">${exploreResources.map(r => `
+                    <div class="explore-card" onclick="window.open('${r.url}','_blank')">
+                        <div class="explore-icon"><i class="ph ${r.icon}"></i></div>
+                        <div class="explore-title">${r.name}</div>
+                        <div class="explore-category">${r.category}</div>
+                        <div class="explore-description">${r.description}</div>
+                        <div class="explore-url">${r.url}</div>
                     </div>
-                </div>
-                <div class="explore-grid" id="exploreGrid">
-                    ${renderExploreResources(exploreResources)}
-                </div>
+                `).join('')}</div>
             `;
-        }
-
-        function renderExploreResources(resources) {
-            return resources.map(resource => `
-                <div class="explore-card" onclick="window.open('${resource.url}', '_blank')">
-                    <div class="explore-card-header">
-                        <div class="explore-icon">
-                            <i class="ph ${resource.icon}"></i>
-                        </div>
-                        <div class="explore-title">${resource.name}</div>
+            document.getElementById('exploreSearch')?.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                document.getElementById('exploreGrid').innerHTML = exploreResources.filter(r => 
+                    r.name.toLowerCase().includes(term) || r.description.toLowerCase().includes(term)
+                ).map(r => `
+                    <div class="explore-card" onclick="window.open('${r.url}','_blank')">
+                        <div class="explore-icon"><i class="ph ${r.icon}"></i></div>
+                        <div class="explore-title">${r.name}</div>
+                        <div class="explore-category">${r.category}</div>
+                        <div class="explore-description">${r.description}</div>
+                        <div class="explore-url">${r.url}</div>
                     </div>
-                    <div class="explore-category">${resource.category}</div>
-                    <div class="explore-description">${resource.description}</div>
-                    <div class="explore-url">
-                        <i class="ph ph-link"></i>
-                        ${resource.url}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function setupExploreSearch() {
-            const searchInput = document.getElementById('exploreSearch');
-            if (!searchInput) return;
-            
-            searchInput.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase().trim();
-                const filtered = exploreResources.filter(resource => 
-                    resource.name.toLowerCase().includes(term) ||
-                    resource.description.toLowerCase().includes(term) ||
-                    resource.category.toLowerCase().includes(term)
-                );
-                
-                document.getElementById('exploreGrid').innerHTML = renderExploreResources(filtered);
+                `).join('');
             });
         }
 
         // ============================================
-        // MARKETS PAGE - COINGECKO API via your proxy
+        // MARKETS PAGE
         // ============================================
         function loadMarketsPage() {
-            const contentEl = document.getElementById('mainContent');
-            contentEl.innerHTML = getMarketsPageHTML();
-            fetchMarketData();
-        }
-
-        function getMarketsPageHTML() {
-            return `
-                <div class="page-indicator">
-                    <i class="ph ph-chart-line-up"></i> Markets · Live Prices
-                </div>
-                <div class="markets-header">
-                    <div class="markets-refresh">
-                        <i class="ph ph-clock"></i>
-                        <span id="marketUpdateTime">Updated just now</span>
-                    </div>
-                </div>
-                <div class="markets-grid" id="marketsGrid">
-                    <div class="loading"><i class="ph ph-spinner ph-spin"></i><br>Loading prices...</div>
-                </div>
+            document.getElementById('mainContent').innerHTML = `
+                <div class="page-indicator"><i class="ph ph-chart-line-up"></i> Markets</div>
+                <div class="markets-header"><div class="markets-refresh"><i class="ph ph-clock"></i><span id="marketUpdateTime">Loading...</span></div></div>
+                <div class="markets-grid" id="marketsGrid"><div class="loading">Loading prices...</div></div>
             `;
+            fetchMarkets();
         }
 
-        async function fetchMarketData() {
+        async function fetchMarkets() {
             try {
-                const marketsGrid = document.getElementById('marketsGrid');
-                if (!marketsGrid) return;
-                
-                // Use your API proxy instead of direct CoinGecko call
-                const response = await fetch(`${API_BASE}/markets`);
-                
-                const coins = await response.json();
-                
-                if (coins.error) {
-                    throw new Error(coins.error);
-                }
-                
-                const updateTimeEl = document.getElementById('marketUpdateTime');
-                if (updateTimeEl) {
-                    updateTimeEl.textContent = `Updated ${new Date().toLocaleTimeString()}`;
-                }
-                
-                renderCoins(coins);
-                
-                setTimeout(fetchMarketData, 900000);
-                
-            } catch (error) {
-                console.error('Error fetching markets:', error);
-                const marketsGrid = document.getElementById('marketsGrid');
-                if (marketsGrid) {
-                    marketsGrid.innerHTML = `
-                        <div style="color: #ff5252; text-align: center; padding: 40px;">
-                            <i class="ph ph-warning" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                            <p>Failed to load market data</p>
-                            <p style="font-size: 0.8rem; color: #8a8d91; margin-top: 10px;">Please try again later.</p>
-                        </div>
-                    `;
-                }
-            }
-        }
-
-        function renderCoins(coins) {
-            const marketsGrid = document.getElementById('marketsGrid');
-            if (!marketsGrid) return;
-            
-            let html = '';
-            coins.forEach(coin => {
-                const changeClass = coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative';
-                const changeSymbol = coin.price_change_percentage_24h >= 0 ? '+' : '';
-                const price = coin.current_price || 0;
-                const change = coin.price_change_percentage_24h || 0;
-                
-                html += `
+                const res = await fetch(`${API_BASE}/markets`);
+                const coins = await res.json();
+                if (coins.error) throw new Error(coins.error);
+                document.getElementById('marketUpdateTime').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+                document.getElementById('marketsGrid').innerHTML = coins.map(c => `
                     <div class="coin-card">
-                        <div class="coin-header">
-                            <span class="coin-rank">#${coin.market_cap_rank || 'N/A'}</span>
-                            <span class="coin-name">${coin.name}</span>
-                            <span class="coin-symbol">${coin.symbol?.toUpperCase() || ''}</span>
-                        </div>
-                        <div class="coin-price">$${price.toLocaleString()}</div>
-                        <div class="coin-change ${changeClass}">
-                            ${changeSymbol}${change.toFixed(2)}%
-                        </div>
-                        <div class="coin-chart" id="chart-${coin.id}">
-                            <canvas width="100%" height="60"></canvas>
-                        </div>
+                        <div class="coin-header"><span class="coin-rank">#${c.market_cap_rank}</span><span class="coin-name">${c.name}</span><span class="coin-symbol">${c.symbol.toUpperCase()}</span></div>
+                        <div class="coin-price">$${c.current_price.toLocaleString()}</div>
+                        <div class="coin-change ${c.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}">${c.price_change_percentage_24h >= 0 ? '+' : ''}${c.price_change_percentage_24h?.toFixed(2)}%</div>
+                        <div class="coin-chart"><canvas id="chart-${c.id}" width="100%" height="60"></canvas></div>
                     </div>
-                `;
-            });
-            
-            marketsGrid.innerHTML = html;
-            
-            coins.forEach(coin => {
-                if (coin.sparkline_in_7d?.price) {
-                    const canvas = document.querySelector(`#chart-${coin.id} canvas`);
-                    if (canvas && window.Chart) {
-                        try {
+                `).join('');
+                setTimeout(fetchMarkets, 900000);
+                if (window.Chart) {
+                    coins.forEach(c => {
+                        const canvas = document.getElementById(`chart-${c.id}`);
+                        if (canvas && c.sparkline_in_7d?.price) {
                             new Chart(canvas, {
                                 type: 'line',
-                                data: {
-                                    labels: coin.sparkline_in_7d.price.map((_, i) => i),
-                                    datasets: [{
-                                        data: coin.sparkline_in_7d.price,
-                                        borderColor: coin.price_change_percentage_24h >= 0 ? '#00c853' : '#ff5252',
-                                        borderWidth: 2,
-                                        pointRadius: 0,
-                                        fill: false,
-                                        tension: 0.4
-                                    }]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: { 
-                                        legend: { display: false },
-                                        tooltip: { enabled: false }
-                                    },
-                                    scales: { 
-                                        x: { display: false }, 
-                                        y: { display: false } 
-                                    },
-                                    elements: {
-                                        line: { borderWidth: 2 }
-                                    }
-                                }
+                                data: { labels: c.sparkline_in_7d.price.map((_,i)=>i), datasets: [{ data: c.sparkline_in_7d.price, borderColor: c.price_change_percentage_24h >= 0 ? '#00c853' : '#ff5252', borderWidth: 2, pointRadius: 0 }] },
+                                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
                             });
-                        } catch (chartError) {
-                            console.error('Chart error:', chartError);
                         }
-                    }
+                    });
                 }
-            });
-        }
-
-        // ============================================
-        // USER FUNCTIONS (simplified - no Firebase Auth)
-        // ============================================
-        function updateUserProfile() {
-            const container = document.getElementById('userProfileContainer');
-            if (!container) return;
-            
-            // Simple user profile using localStorage
-            const displayName = localStorage.getItem('userName') || 'Guest';
-            const initial = displayName.charAt(0).toUpperCase();
-            
-            container.innerHTML = `
-                <div class="user-profile" onclick="showPopup('User Menu', 'User features coming soon!')">
-                    <div class="user-avatar">${initial}</div>
-                    <span class="user-name">${displayName}</span>
-                </div>
-            `;
+            } catch (error) {
+                document.getElementById('marketsGrid').innerHTML = '<div class="loading" style="color:#ff5252;">Failed to load market data</div>';
+            }
         }
 
         function showPopup(title, message) {
@@ -2229,114 +2058,11 @@
             document.getElementById('popup').classList.add('show');
         }
 
-        function getRelativeTime(timestamp) {
-            if (!timestamp) return 'Just now';
-            
-            let postDate;
-            if (timestamp.toDate) {
-                postDate = timestamp.toDate();
-            } else if (typeof timestamp === 'string') {
-                postDate = new Date(timestamp);
-            } else {
-                return 'Just now';
-            }
-
-            const now = new Date();
-            const diffMs = now - postDate;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-
-            if (diffMins < 1) return 'Just now';
-            if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-            if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-            
-            return postDate.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric',
-                year: 'numeric'
-            });
-        }
-
-        const expandedPosts = new Map();
-
-        window.toggleReadMore = function(postId, isFeatured = false, event) {
-            if (event) {
-                event.stopPropagation();
-            }
-            
-            const currentState = expandedPosts.get(postId) || false;
-            expandedPosts.set(postId, !currentState);
-            
-            const postElement = document.getElementById(`post-${postId}`);
-            if (!postElement) return;
-            
-            const contentContainer = postElement.querySelector('.post-content-container');
-            const readMoreBtn = postElement.querySelector('.read-more-btn');
-            
-            if (!contentContainer || !readMoreBtn) return;
-            
-            const fullContent = contentContainer.getAttribute('data-full-content');
-            const isExpanded = expandedPosts.get(postId);
-            
-            if (isExpanded) {
-                contentContainer.innerHTML = formatContent(fullContent);
-                readMoreBtn.innerHTML = 'Show less <i class="ph ph-arrow-up"></i>';
-            } else {
-                contentContainer.innerHTML = truncateForPreview(fullContent, isFeatured ? 150 : 100);
-                readMoreBtn.innerHTML = 'Read more <i class="ph ph-arrow-down"></i>';
-            }
-        };
-
-        window.toggleLike = async function(postId, event) {
-            if (event) {
-                event.stopPropagation();
-            }
-            
-            try {
-                const result = await likePost(postId);
-                
-                if (result.success) {
-                    const postElement = document.getElementById(`post-${postId}`);
-                    if (!postElement) return;
-                    
-                    const likeBtn = postElement.querySelector('.like-btn');
-                    const likeCount = postElement.querySelector('.like-count');
-                    
-                    if (likeBtn && likeCount) {
-                        const currentlyLiked = userLikes.get(postId) || false;
-                        userLikes.set(postId, !currentlyLiked);
-                        
-                        if (!currentlyLiked) {
-                            likeBtn.classList.add('liked');
-                        } else {
-                            likeBtn.classList.remove('liked');
-                        }
-                        likeCount.textContent = result.likes;
-                    }
-                }
-            } catch (error) {
-                showPopup('Error', 'Failed to like post');
-            }
-        };
-
-        window.toggleComments = function(postId, event) {
-            if (event) {
-                event.stopPropagation();
-            }
-            showPopup('Comments', 'Comments feature coming soon!');
-        };
-
         function renderTrending() {
-            const trendingEl = document.getElementById('homeTrending');
-            if (!trendingEl) return;
-            
-            trendingEl.innerHTML = trendingTopics.map(item => `
-                <div class="trending-item" onclick="document.getElementById('searchInput').value='${item.topic}'; performSearch('${item.topic}')">
-                    <i class="ph ${item.icon}"></i>
-                    <span>${item.topic}</span>
-                    <span class="trending-count">• ${item.posts}</span>
+            const el = document.getElementById('homeTrending');
+            if (el) el.innerHTML = trendingTopics.map(t => `
+                <div class="trending-item" onclick="document.getElementById('searchInput').value='${t.topic}'; performSearch('${t.topic}')">
+                    <i class="ph ${t.icon}"></i><span>${t.topic}</span><span class="trending-count">• ${t.posts}</span>
                 </div>
             `).join('');
         }
@@ -2345,32 +2071,22 @@
             document.getElementById('backToTop')?.addEventListener('click', () => {
                 document.getElementById('scrollableContent').scrollTo({ top: 0, behavior: 'smooth' });
             });
-
             document.getElementById('logo')?.addEventListener('click', () => {
                 document.getElementById('scrollableContent').scrollTo({ top: 0, behavior: 'smooth' });
             });
-
             document.getElementById('subscribeBtn')?.addEventListener('click', () => {
                 const email = document.getElementById('newsletterEmail').value;
-                if (email) {
-                    showPopup('Thanks!', `We'll notify you at ${email} when our newsletter launches.`);
-                } else {
-                    showPopup('Almost there!', 'Please enter your email address.');
-                }
+                showPopup('Thanks!', email ? `We'll notify ${email}` : 'Please enter email');
             });
-
-            document.getElementById('appStoreBtn')?.addEventListener('click', () => showPopup('Coming Soon', 'Our iOS app is in development.'));
-            document.getElementById('playStoreBtn')?.addEventListener('click', () => showPopup('Coming Soon', 'Our Android app is in development.'));
-
-            document.getElementById('aboutLink')?.addEventListener('click', () => showPopup('About lyteit.com', 'Your trusted source for crypto news.'));
-            document.getElementById('privacyLink')?.addEventListener('click', () => showPopup('Privacy Policy', 'Full policy coming soon.'));
-            document.getElementById('termsLink')?.addEventListener('click', () => showPopup('Terms of Service', 'Terms coming soon.'));
+            document.getElementById('appStoreBtn')?.addEventListener('click', () => showPopup('Coming Soon', 'iOS app in development'));
+            document.getElementById('playStoreBtn')?.addEventListener('click', () => showPopup('Coming Soon', 'Android app in development'));
+            document.getElementById('aboutLink')?.addEventListener('click', () => showPopup('About', 'Your trusted crypto news platform'));
+            document.getElementById('privacyLink')?.addEventListener('click', () => showPopup('Privacy', 'Coming soon'));
+            document.getElementById('termsLink')?.addEventListener('click', () => showPopup('Terms', 'Coming soon'));
             document.getElementById('contactLink')?.addEventListener('click', () => showPopup('Contact', 'Email: hello@lyteit.com'));
-
             document.getElementById('closePopup')?.addEventListener('click', () => {
                 document.getElementById('popup').classList.remove('show');
             });
-
             document.getElementById('popup')?.addEventListener('click', (e) => {
                 if (e.target === document.getElementById('popup')) {
                     document.getElementById('popup').classList.remove('show');
@@ -2378,8 +2094,6 @@
             });
         }
 
-        // Initialize
-        updateUserProfile();
         renderTrending();
         setupEventListeners();
         navigateTo('home');
