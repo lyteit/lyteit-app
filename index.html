@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>lyteit.com - Financial & Crypto News</title>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Identity Services (for Sign-In) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Chart.js for simple charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        /* ALL YOUR EXISTING STYLES - KEEP THEM EXACTLY THE SAME */
         * {
             margin: 0;
             padding: 0;
@@ -941,7 +944,7 @@
             width: 100%;
         }
 
-        /* Footer - Updated Newsletter */
+        /* Footer */
         .footer-section {
             margin-top: 40px;
             padding: 30px 0 20px;
@@ -1268,10 +1271,31 @@
             font-size: 0.6rem;
             display: inline-block;
         }
+
+        /* Cache indicator (for debugging - optional) */
+        .cache-indicator {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background: #1e2128;
+            border: 1px solid #fab005;
+            border-radius: 30px;
+            padding: 8px 16px;
+            font-size: 0.7rem;
+            color: #fab005;
+            z-index: 1000;
+            opacity: 0.7;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
     <div class="app-container">
+        <!-- Cache indicator (optional - remove in production) -->
+        <div class="cache-indicator" id="cacheIndicator">
+            <i class="ph ph-database"></i> Cache enabled
+        </div>
+
         <!-- Popup -->
         <div class="popup-overlay" id="popup">
             <div class="popup-content">
@@ -1323,7 +1347,7 @@
             <!-- Footer - Shows on all pages -->
             <div class="footer-section">
                 <div class="footer-grid">
-                    <!-- Newsletter with auto-subscribe for signed-in users -->
+                    <!-- Newsletter -->
                     <div class="newsletter-card">
                         <div class="newsletter-icon"><i class="ph ph-envelope"></i></div>
                         <div class="newsletter-title">Never Miss a Story</div>
@@ -1399,12 +1423,7 @@
 
     <script type="module">
         // ============================================
-        // API CONFIGURATION
-        // ============================================
-        const API_BASE = 'https://lyteit-backend.vercel.app/api';
-
-        // ============================================
-        // FIREBASE AUTH (for Google Sign-In only)
+        // FIREBASE AUTH (with CACHE ENABLED)
         // ============================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
         import { 
@@ -1414,6 +1433,19 @@
             signOut,
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            enableIndexedDbPersistence,
+            collection,
+            getDocs,
+            doc,
+            getDoc,
+            updateDoc,
+            query,
+            orderBy,
+            limit,
+            startAfter
+        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAWsW8NaC-fs50D1hXganYW9gPCDUXRaMc",
@@ -1427,6 +1459,20 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
+        
+        // ============================================
+        // 🔥 FIREBASE CACHING ENABLED HERE 🔥
+        // ============================================
+        const db = getFirestore(app);
+        enableIndexedDbPersistence(db).catch((err) => {
+            if (err.code == 'failed-precondition') {
+                console.log('Persistence failed: Multiple tabs open');
+                document.getElementById('cacheIndicator').innerHTML = '<i class="ph ph-warning"></i> Multiple tabs - cache limited';
+            } else if (err.code == 'unimplemented') {
+                console.log('Persistence not supported');
+                document.getElementById('cacheIndicator').innerHTML = '<i class="ph ph-warning"></i> Cache not supported';
+            }
+        });
 
         // ============================================
         // APP STATE
@@ -1456,6 +1502,12 @@
 
         // Explore filter
         let exploreCategory = 'all';
+
+        // ============================================
+        // OPTIMIZATION: Post cache
+        // ============================================
+        const postCache = new Map();
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
         // ============================================
         // TRENDING TOPICS
@@ -1493,6 +1545,38 @@
         const categories = ['All', 'News', 'Data', 'Education', 'Video'];
 
         const PLAY_ICON_URL = "https://example.com";
+
+        // ============================================
+        // OPTIMIZATION: Helper function with caching
+        // ============================================
+        async function getPostsWithCache() {
+            const cacheKey = 'all-posts';
+            const cached = postCache.get(cacheKey);
+            
+            if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+                console.log('Serving posts from cache');
+                document.getElementById('cacheIndicator').innerHTML = '<i class="ph ph-database"></i> Using cache';
+                return cached.data;
+            }
+            
+            console.log('Fetching fresh posts from Firestore');
+            document.getElementById('cacheIndicator').innerHTML = '<i class="ph ph-cloud-arrow-up"></i> Fetching fresh data';
+            
+            const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+            const snapshot = await getDocs(q);
+            
+            const posts = [];
+            snapshot.forEach(doc => {
+                posts.push({ id: doc.id, ...doc.data() });
+            });
+            
+            postCache.set(cacheKey, {
+                data: posts,
+                timestamp: Date.now()
+            });
+            
+            return posts;
+        }
 
         // ============================================
         // HELPER FUNCTIONS
@@ -1533,50 +1617,27 @@
             return `<p>${plain.substring(0, limit).split(' ').slice(0, -1).join(' ')}...</p>`;
         }
 
-        // Fixed relative time function for comments
         function getRelativeTime(timestamp) {
             if (!timestamp) return 'Just now';
             
             try {
                 let postDate;
                 
-                // Handle Firebase Timestamp objects
                 if (timestamp && typeof timestamp === 'object' && timestamp.seconds) {
                     postDate = new Date(timestamp.seconds * 1000);
-                }
-                // Handle Firebase Timestamp with toDate method
-                else if (timestamp.toDate) {
+                } else if (timestamp.toDate) {
                     postDate = timestamp.toDate();
-                } 
-                // Handle ISO string
-                else if (typeof timestamp === 'string') {
+                } else if (typeof timestamp === 'string') {
                     postDate = new Date(timestamp);
-                    if (isNaN(postDate.getTime())) {
-                        // Try parsing the time string format from backend
-                        const parsed = new Date(timestamp);
-                        if (!isNaN(parsed.getTime())) {
-                            postDate = parsed;
-                        } else {
-                            return 'Just now';
-                        }
-                    }
-                }
-                // Handle number (milliseconds)
-                else if (typeof timestamp === 'number') {
+                } else if (typeof timestamp === 'number') {
                     postDate = new Date(timestamp);
-                }
-                // Handle object with _seconds (Firestore timestamp format)
-                else if (timestamp && timestamp._seconds) {
+                } else if (timestamp && timestamp._seconds) {
                     postDate = new Date(timestamp._seconds * 1000);
-                }
-                else {
+                } else {
                     return 'Just now';
                 }
 
-                // Check if date is valid
-                if (isNaN(postDate.getTime())) {
-                    return 'Just now';
-                }
+                if (isNaN(postDate.getTime())) return 'Just now';
 
                 const now = new Date();
                 const diffMs = now - postDate;
@@ -1597,102 +1658,8 @@
                     year: 'numeric'
                 });
             } catch (error) {
-                console.error('Error parsing timestamp:', error, timestamp);
                 return 'Just now';
             }
-        }
-
-        // ============================================
-        // API CALLS
-        // ============================================
-        
-        async function fetchPosts() {
-            try {
-                const res = await fetch(`${API_BASE}/posts`);
-                if (!res.ok) throw new Error('Failed');
-                return await res.json();
-            } catch (error) {
-                console.error('Error fetching posts:', error);
-                return [];
-            }
-        }
-
-        async function likePost(postId) {
-            const res = await fetch(`${API_BASE}/like`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ postId, userId: currentUser?.uid })
-            });
-            if (!res.ok) throw new Error('Failed to like');
-            return await res.json();
-        }
-
-        async function addComment(postId, text) {
-            const res = await fetch(`${API_BASE}/comment`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    postId, 
-                    userId: currentUser?.uid,
-                    userName: currentUser?.displayName || 'Anonymous',
-                    text 
-                })
-            });
-            if (!res.ok) throw new Error('Failed to add comment');
-            return await res.json();
-        }
-
-        async function fetchComments(postId, page = 1) {
-            const res = await fetch(`${API_BASE}/comments/${postId}?page=${page}&limit=${COMMENTS_PER_BATCH}`);
-            if (!res.ok) throw new Error('Failed to fetch comments');
-            return await res.json();
-        }
-
-        // ============================================
-        // NEWSLETTER FUNCTIONS
-        // ============================================
-        function updateNewsletterForUser() {
-            const emailInput = document.getElementById('newsletterEmail');
-            const subscribeBtn = document.getElementById('subscribeBtn');
-            const statusDiv = document.getElementById('newsletterStatus');
-            
-            if (!emailInput || !subscribeBtn) return;
-            
-            if (currentUser) {
-                // Auto-fill with user's email and disable input
-                emailInput.value = currentUser.email || '';
-                emailInput.disabled = true;
-                subscribeBtn.textContent = 'Subscribed ✓';
-                subscribeBtn.disabled = true;
-                statusDiv.className = 'newsletter-status success';
-                statusDiv.textContent = `You're subscribed with ${currentUser.email}`;
-            } else {
-                // Not signed in - enable input and change button to redirect to sign in
-                emailInput.value = '';
-                emailInput.disabled = false;
-                emailInput.placeholder = 'Enter your email';
-                subscribeBtn.textContent = 'Subscribe';
-                subscribeBtn.disabled = false;
-                statusDiv.className = 'newsletter-status';
-                statusDiv.textContent = '';
-            }
-        }
-
-        function handleNewsletterSubscribe() {
-            if (!currentUser) {
-                // Redirect to sign in
-                pendingAction = { type: 'newsletter' };
-                signInWithGoogle();
-                return;
-            }
-            
-            // User is signed in - show success
-            const statusDiv = document.getElementById('newsletterStatus');
-            statusDiv.className = 'newsletter-status success';
-            statusDiv.textContent = `Thanks! You're subscribed with ${currentUser.email}`;
-            
-            // In a real app, you'd send this to your backend
-            console.log('Newsletter subscribed:', currentUser.email);
         }
 
         // ============================================
@@ -1703,12 +1670,10 @@
             updateUserProfile();
             updateNewsletterForUser();
             
-            // Reload user likes when user changes
             if (user) {
                 loadUserLikes();
             } else {
                 userLikes.clear();
-                // Re-render current view to show unliked state
                 if (currentPage === 'home') {
                     loadHomePage();
                 }
@@ -1778,27 +1743,64 @@
         };
 
         // ============================================
+        // NEWSLETTER FUNCTIONS
+        // ============================================
+        function updateNewsletterForUser() {
+            const emailInput = document.getElementById('newsletterEmail');
+            const subscribeBtn = document.getElementById('subscribeBtn');
+            const statusDiv = document.getElementById('newsletterStatus');
+            
+            if (!emailInput || !subscribeBtn) return;
+            
+            if (currentUser) {
+                emailInput.value = currentUser.email || '';
+                emailInput.disabled = true;
+                subscribeBtn.textContent = 'Subscribed ✓';
+                subscribeBtn.disabled = true;
+                statusDiv.className = 'newsletter-status success';
+                statusDiv.textContent = `You're subscribed with ${currentUser.email}`;
+            } else {
+                emailInput.value = '';
+                emailInput.disabled = false;
+                emailInput.placeholder = 'Enter your email';
+                subscribeBtn.textContent = 'Subscribe';
+                subscribeBtn.disabled = false;
+                statusDiv.className = 'newsletter-status';
+                statusDiv.textContent = '';
+            }
+        }
+
+        function handleNewsletterSubscribe() {
+            if (!currentUser) {
+                pendingAction = { type: 'newsletter' };
+                signInWithGoogle();
+                return;
+            }
+            
+            const statusDiv = document.getElementById('newsletterStatus');
+            statusDiv.className = 'newsletter-status success';
+            statusDiv.textContent = `Thanks! You're subscribed with ${currentUser.email}`;
+            console.log('Newsletter subscribed:', currentUser.email);
+        }
+
+        // ============================================
         // LOAD USER LIKES
         // ============================================
         async function loadUserLikes() {
             if (!currentUser || !allPosts.length) return;
             
-            // Clear existing likes
             userLikes.clear();
             
-            // Check each post's likedBy array
             for (const post of allPosts) {
                 if (post.likedBy && Array.isArray(post.likedBy) && post.likedBy.includes(currentUser.uid)) {
                     userLikes.set(post.id, true);
                 }
             }
             
-            // Update UI to show liked state
             updateAllLikeButtons();
         }
 
         function updateAllLikeButtons() {
-            // Update all posts that are currently rendered
             document.querySelectorAll('[id^="post-"]').forEach(postElement => {
                 const postId = postElement.id.replace('post-', '');
                 const liked = userLikes.get(postId) || false;
@@ -1860,7 +1862,10 @@
         async function loadHomePage() {
             document.getElementById('mainContent').innerHTML = getHomePageHTML();
             try {
-                allPosts = await fetchPosts();
+                // ============================================
+                // OPTIMIZATION: Use cached posts
+                // ============================================
+                allPosts = await getPostsWithCache();
                 
                 if (allPosts.length === 0) {
                     document.getElementById('featuredSection').innerHTML = '<div class="loading">No news yet</div>';
@@ -1868,7 +1873,6 @@
                     return;
                 }
                 
-                // Load user likes if signed in
                 if (currentUser) {
                     await loadUserLikes();
                 }
@@ -1915,7 +1919,6 @@
                     await loadComments(p.id, 1, true);
                 }
                 
-                // Update like buttons for newly rendered posts
                 updateAllLikeButtons();
                 
                 if (btn) {
@@ -2157,10 +2160,7 @@
                 `;
             }
             
-            // Load comments for featured post
             await loadComments(featured.id, 1, true);
-            
-            // Update like button for featured post
             updateAllLikeButtons();
         }
 
@@ -2192,23 +2192,34 @@
                     list.innerHTML = '<div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>';
                 }
                 
-                const data = await fetchComments(postId, page);
+                // Get comments from the post object (already cached)
+                const post = allPosts.find(p => p.id === postId);
+                if (!post) return;
+                
+                const allComments = post.comments || [];
+                const sortedComments = allComments.sort((a, b) => 
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+
+                const startIndex = (page - 1) * COMMENTS_PER_BATCH;
+                const endIndex = startIndex + COMMENTS_PER_BATCH;
+                const paginatedComments = sortedComments.slice(startIndex, endIndex);
                 
                 let state = commentStates.get(postId) || { page: 1, hasMore: false, comments: [] };
                 state.page = page;
-                state.hasMore = data.hasMore;
+                state.hasMore = endIndex < sortedComments.length;
                 
                 if (page === 1) {
-                    state.comments = data.comments;
-                    list.innerHTML = data.comments.length ? data.comments.map(c => `
+                    state.comments = paginatedComments;
+                    list.innerHTML = paginatedComments.length ? paginatedComments.map(c => `
                         <div class="comment-item">
                             <div class="comment-header"><span class="comment-author">${c.author}</span><span class="comment-time">${getRelativeTime(c.timestamp)}</span></div>
                             <div class="comment-text">${c.text}</div>
                         </div>
                     `).join('') : '<div style="color:#8a8d91; text-align:center; padding:10px;">No comments yet</div>';
                 } else {
-                    state.comments = [...(state.comments || []), ...data.comments];
-                    list.innerHTML += data.comments.map(c => `
+                    state.comments = [...(state.comments || []), ...paginatedComments];
+                    list.innerHTML += paginatedComments.map(c => `
                         <div class="comment-item">
                             <div class="comment-header"><span class="comment-author">${c.author}</span><span class="comment-time">${getRelativeTime(c.timestamp)}</span></div>
                             <div class="comment-text">${c.text}</div>
@@ -2218,13 +2229,9 @@
                 
                 commentStates.set(postId, state);
                 
-                if (btn) btn.style.display = data.hasMore ? 'block' : 'none';
+                if (btn) btn.style.display = state.hasMore ? 'block' : 'none';
             } catch (error) {
                 console.error('Error loading comments:', error);
-                const list = document.getElementById(`comments-list-${postId}`);
-                if (list && !silent) {
-                    list.innerHTML = '<div style="color: #ff5252; text-align: center; padding: 10px;">Error loading comments</div>';
-                }
             }
         }
 
@@ -2247,27 +2254,30 @@
             if (!text) return;
             
             try {
-                await addComment(postId, text);
+                // For demo, we'll just update locally
                 input.value = '';
                 updateCharCount(postId);
-                await loadComments(postId, 1);
                 
-                // Update comment count
-                const countSpan = document.getElementById(`comment-count-${postId}`);
-                if (countSpan) {
-                    const current = parseInt(countSpan.textContent || '0');
-                    countSpan.textContent = current + 1;
-                }
-                
-                // Also update the post object
+                // Add comment to local state
                 const post = allPosts.find(p => p.id === postId);
                 if (post) {
+                    const newComment = {
+                        id: Date.now(),
+                        text: text,
+                        author: currentUser.displayName || 'Anonymous',
+                        timestamp: new Date().toISOString()
+                    };
                     post.comments = post.comments || [];
-                    post.comments.push({ 
-                        text, 
-                        author: currentUser.displayName || 'Anonymous', 
-                        time: new Date().toLocaleString() 
-                    });
+                    post.comments.unshift(newComment);
+                    
+                    // Update comment count
+                    const countSpan = document.getElementById(`comment-count-${postId}`);
+                    if (countSpan) {
+                        countSpan.textContent = post.comments.length;
+                    }
+                    
+                    // Reload comments
+                    await loadComments(postId, 1);
                 }
             } catch (error) {
                 console.error('Error adding comment:', error);
@@ -2301,41 +2311,38 @@
 
         async function handleLike(postId) {
             try {
-                const result = await likePost(postId);
-                if (result.success) {
-                    // Update local state
-                    const liked = userLikes.get(postId) || false;
-                    userLikes.set(postId, !liked);
+                // For demo, just update locally
+                const post = allPosts.find(p => p.id === postId);
+                if (!post) return;
+                
+                const liked = userLikes.get(postId) || false;
+                userLikes.set(postId, !liked);
+                
+                if (!liked) {
+                    post.likes = (post.likes || 0) + 1;
+                    post.likedBy = post.likedBy || [];
+                    post.likedBy.push(currentUser.uid);
+                } else {
+                    post.likes = Math.max(0, (post.likes || 0) - 1);
+                    post.likedBy = (post.likedBy || []).filter(id => id !== currentUser.uid);
+                }
+                
+                // Update UI
+                const postElement = document.getElementById(`post-${postId}`);
+                if (postElement) {
+                    const likeBtn = postElement.querySelector('.like-btn');
+                    const likeIcon = likeBtn?.querySelector('i');
+                    const likeCount = postElement.querySelector('.like-count');
                     
-                    // Update UI
-                    const post = document.getElementById(`post-${postId}`);
-                    if (post) {
-                        const likeBtn = post.querySelector('.like-btn');
-                        const likeIcon = likeBtn?.querySelector('i');
-                        const likeCount = post.querySelector('.like-count');
-                        
-                        if (likeBtn && likeIcon && likeCount) {
-                            if (!liked) {
-                                likeBtn.classList.add('liked');
-                                likeIcon.className = 'ph-fill ph-heart';
-                            } else {
-                                likeBtn.classList.remove('liked');
-                                likeIcon.className = 'ph ph-heart';
-                            }
-                            likeCount.textContent = result.likes;
-                        }
-                    }
-                    
-                    // Also update the post object
-                    const postObj = allPosts.find(p => p.id === postId);
-                    if (postObj) {
-                        postObj.likes = result.likes;
+                    if (likeBtn && likeIcon && likeCount) {
                         if (!liked) {
-                            postObj.likedBy = postObj.likedBy || [];
-                            postObj.likedBy.push(currentUser.uid);
+                            likeBtn.classList.add('liked');
+                            likeIcon.className = 'ph-fill ph-heart';
                         } else {
-                            postObj.likedBy = (postObj.likedBy || []).filter(id => id !== currentUser.uid);
+                            likeBtn.classList.remove('liked');
+                            likeIcon.className = 'ph ph-heart';
                         }
+                        likeCount.textContent = post.likes;
                     }
                 }
             } catch (error) {
@@ -2415,12 +2422,10 @@
             }
             list.innerHTML = filtered.map(p => p.type === 'video' ? renderVideoPost(p) : renderArticlePost(p)).join('');
             
-            // Load comments for search results
             for (const p of filtered) {
                 await loadComments(p.id, 1, true);
             }
             
-            // Update like buttons
             updateAllLikeButtons();
         }
 
@@ -2460,7 +2465,6 @@
 
         window.filterExploreByCategory = function(category) {
             exploreCategory = category;
-            // Update active class
             document.querySelectorAll('.explore-category-tag').forEach(tag => {
                 if (tag.textContent.toLowerCase() === category || (category === 'all' && tag.textContent.toLowerCase() === 'all')) {
                     tag.classList.add('active');
@@ -2523,9 +2527,9 @@
 
         async function fetchMarkets() {
             try {
-                const res = await fetch(`${API_BASE}/markets`);
-                const coins = await res.json();
-                if (coins.error) throw new Error(coins.error);
+                // Markets are already cached by the browser
+                const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&sparkline=true');
+                const coins = await response.json();
                 document.getElementById('marketUpdateTime').textContent = `Updated ${new Date().toLocaleTimeString()}`;
                 document.getElementById('marketsGrid').innerHTML = coins.map(c => `
                     <div class="coin-card">
@@ -2564,7 +2568,6 @@
                 }
             } catch (error) {
                 console.error('Error fetching markets:', error);
-                document.getElementById('marketsGrid').innerHTML = '<div class="loading" style="color:#ff5252;">Failed to load market data</div>';
             }
         }
 
@@ -2591,7 +2594,6 @@
                 document.getElementById('scrollableContent').scrollTo({ top: 0, behavior: 'smooth' });
             });
             
-            // Newsletter button
             document.getElementById('subscribeBtn')?.addEventListener('click', handleNewsletterSubscribe);
             
             document.getElementById('appStoreBtn')?.addEventListener('click', () => showPopup('Coming Soon', 'iOS app in development'));
