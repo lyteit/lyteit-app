@@ -1279,43 +1279,10 @@
     <script src='https://cdn.jotfor.ms/agent/embedjs/019c905c4c0c792b87d26b18bd0154e1faf8/embed.js'></script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        import { 
-            getFirestore, 
-            collection, 
-            getDocs, 
-            getDoc,
-            doc,
-            updateDoc,
-            query, 
-            orderBy,
-            arrayUnion,
-            arrayRemove
-        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-        import { 
-            getAuth, 
-            signInWithPopup, 
-            GoogleAuthProvider, 
-            signOut,
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-
         // ============================================
-        // FIREBASE CONFIGURATION
+        // API CONFIGURATION - NO FIREBASE HERE!
         // ============================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyAWsW8NaC-fs50D1hXganYW9gPCDUXRaMc",
-            authDomain: "lyteit.firebaseapp.com",
-            projectId: "lyteit",
-            storageBucket: "lyteit.firebasestorage.app",
-            messagingSenderId: "173900972036",
-            appId: "1:173900972036:web:1bd22a25176bf5a716b551"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
+        const API_BASE = 'https://lyteit-backend.vercel.app/api';
 
         // ============================================
         // APP STATE
@@ -1342,6 +1309,10 @@
 
         // Video play states
         const videoPlayed = new Map();
+
+        // User ID for likes (stored locally)
+        const userId = localStorage.getItem('userId') || 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('userId', userId);
 
         // ============================================
         // TRENDING TOPICS (Static for now)
@@ -1476,11 +1447,6 @@
         const PLAY_ICON_URL = "https://example.com"; // ← CHANGE THIS TO YOUR LINK
 
         // ============================================
-        // COINGECKO API CONFIGURATION
-        // ============================================
-        const COINGECKO_API_KEY = "CG-rq1yZNZZRBHHoX5f2c2mTDPK"; // Your API key
-
-        // ============================================
         // TEXT FORMATTING HELPER FUNCTIONS
         // ============================================
         
@@ -1567,29 +1533,41 @@
             
             if (overlay && iframe) {
                 overlay.classList.add('hidden');
-                // Reload iframe with autoplay
                 const src = iframe.src;
                 iframe.src = src + (src.includes('?') ? '&' : '?') + 'autoplay=1';
+                videoPlayed.set(videoId, true);
             }
         };
 
         // ============================================
-        // AUTH STATE OBSERVER
+        // API CALLS (instead of direct Firebase)
         // ============================================
-        onAuthStateChanged(auth, async (user) => {
-            currentUser = user;
-            updateUserProfile();
-            
-            if (user) {
-                await loadUserLikes();
-            } else {
-                userLikes.clear();
+        
+        async function fetchPosts() {
+            try {
+                const response = await fetch(`${API_BASE}/posts`);
+                if (!response.ok) throw new Error('Failed to fetch posts');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+                return [];
             }
-            
-            if (currentPage === 'home') {
-                await loadHomePage();
+        }
+
+        async function likePost(postId) {
+            try {
+                const response = await fetch(`${API_BASE}/like`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postId, userId })
+                });
+                if (!response.ok) throw new Error('Failed to like post');
+                return await response.json();
+            } catch (error) {
+                console.error('Error liking post:', error);
+                throw error;
             }
-        });
+        }
 
         // ============================================
         // NAVIGATION
@@ -1655,13 +1633,8 @@
             contentEl.innerHTML = getHomePageHTML();
             
             try {
-                const allPostsQuery = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
-                const allSnapshot = await getDocs(allPostsQuery);
-                
-                allPosts = [];
-                allSnapshot.forEach(doc => {
-                    allPosts.push({ id: doc.id, ...doc.data() });
-                });
+                // Fetch posts from your API instead of Firebase directly
+                allPosts = await fetchPosts();
 
                 if (allPosts.length === 0) {
                     document.getElementById('featuredSection').innerHTML = '<div class="loading"><i class="ph ph-newspaper"></i><br>No news yet. Check back soon!</div>';
@@ -1719,17 +1692,13 @@
                 
                 for (const post of postsToShow) {
                     if (post.type === 'video') {
-                        html += await renderVideoPost(post);
+                        html += renderVideoPost(post);
                     } else {
-                        html += await renderArticlePost(post);
+                        html += renderArticlePost(post);
                     }
                 }
 
                 newsListEl.innerHTML = html;
-
-                for (const post of postsToShow) {
-                    await loadPostComments(post.id, true);
-                }
                 
                 if (loadMoreBtn) {
                     if (currentDisplayCount >= displayedPosts.length) {
@@ -1750,19 +1719,11 @@
             }
         };
 
-        async function renderArticlePost(post) {
+        function renderArticlePost(post) {
             const isExpanded = expandedPosts.get(post.id) || false;
             const content = post.content || '';
             const postTime = getRelativeTime(post.createdAt || post.timestamp);
             const isLiked = userLikes.get(post.id) || false;
-
-            if (!commentStates.has(post.id)) {
-                commentStates.set(post.id, {
-                    comments: post.comments || [],
-                    displayedCount: 0,
-                    hasMore: (post.comments || []).length > COMMENTS_PER_BATCH
-                });
-            }
 
             return `
                 <div class="news-item" id="post-${post.id}">
@@ -1787,21 +1748,7 @@
                             </div>
                             <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
                                 <i class="ph ph-chat-circle"></i>
-                                <span id="comment-count-${post.id}">${post.comments?.length || 0}</span>
-                            </div>
-                        </div>
-
-                        <div class="comments-section" id="comments-${post.id}" style="display: none;">
-                            <div class="comment-input-area">
-                                <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${post.id}')">
-                                <span class="comment-char-count">150/150</span>
-                                <button class="comment-submit" onclick="addComment('${post.id}', event)" disabled>Post</button>
-                            </div>
-                            <div class="comments-list" id="comments-list-${post.id}">
-                                <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
-                            </div>
-                            <div class="load-more-comments" id="load-more-comments-${post.id}" style="display: none;" onclick="loadMoreComments('${post.id}')">
-                                <i class="ph ph-arrow-down"></i> Load more comments
+                                <span>${post.comments?.length || 0}</span>
                             </div>
                         </div>
 
@@ -1814,21 +1761,13 @@
             `;
         }
 
-        async function renderVideoPost(post) {
-            const videoId = getYouTubeVideoId(post.youtubeUrl) || 'dQw4w9WgXcQ'; // Fallback video
+        function renderVideoPost(post) {
+            const videoId = getYouTubeVideoId(post.youtubeUrl) || 'dQw4w9WgXcQ';
             const isExpanded = expandedPosts.get(post.id) || false;
             const description = post.description || '';
             const postTime = getRelativeTime(post.createdAt || post.timestamp);
             const isLiked = userLikes.get(post.id) || false;
             const hasBeenPlayed = videoPlayed.get(post.id) || false;
-
-            if (!commentStates.has(post.id)) {
-                commentStates.set(post.id, {
-                    comments: post.comments || [],
-                    displayedCount: 0,
-                    hasMore: (post.comments || []).length > COMMENTS_PER_BATCH
-                });
-            }
 
             return `
                 <div class="video-card" id="post-${post.id}">
@@ -1871,21 +1810,7 @@
                             </div>
                             <div class="interaction-item" onclick="toggleComments('${post.id}', event)">
                                 <i class="ph ph-chat-circle"></i>
-                                <span id="comment-count-${post.id}">${post.comments?.length || 0}</span>
-                            </div>
-                        </div>
-
-                        <div class="comments-section" id="comments-${post.id}" style="display: none;">
-                            <div class="comment-input-area">
-                                <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${post.id}')">
-                                <span class="comment-char-count">150/150</span>
-                                <button class="comment-submit" onclick="addComment('${post.id}', event)" disabled>Post</button>
-                            </div>
-                            <div class="comments-list" id="comments-list-${post.id}">
-                                <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
-                            </div>
-                            <div class="load-more-comments" id="load-more-comments-${post.id}" style="display: none;" onclick="loadMoreComments('${post.id}')">
-                                <i class="ph ph-arrow-down"></i> Load more comments
+                                <span>${post.comments?.length || 0}</span>
                             </div>
                         </div>
 
@@ -1951,21 +1876,7 @@
                                 </div>
                                 <div class="interaction-item" onclick="toggleComments('${featured.id}', event)">
                                     <i class="ph ph-chat-circle"></i>
-                                    <span id="comment-count-${featured.id}">${featured.comments?.length || 0}</span>
-                                </div>
-                            </div>
-
-                            <div class="comments-section" id="comments-${featured.id}" style="display: none;">
-                                <div class="comment-input-area">
-                                    <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${featured.id}')">
-                                    <span class="comment-char-count">150/150</span>
-                                    <button class="comment-submit" onclick="addComment('${featured.id}', event)" disabled>Post</button>
-                                </div>
-                                <div class="comments-list" id="comments-list-${featured.id}">
-                                    <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
-                                </div>
-                                <div class="load-more-comments" id="load-more-comments-${featured.id}" style="display: none;" onclick="loadMoreComments('${featured.id}')">
-                                    <i class="ph ph-arrow-down"></i> Load more comments
+                                    <span>${featured.comments?.length || 0}</span>
                                 </div>
                             </div>
 
@@ -1975,16 +1886,6 @@
                         </div>
                     </div>
                 `;
-
-                if (!commentStates.has(featured.id)) {
-                    commentStates.set(featured.id, {
-                        comments: featured.comments || [],
-                        displayedCount: 0,
-                        hasMore: (featured.comments || []).length > COMMENTS_PER_BATCH
-                    });
-                }
-
-                await loadPostComments(featured.id, true);
             } else {
                 const isFeaturedExpanded = expandedPosts.get(featured.id) || false;
                 const featuredContent = featured.content || '';
@@ -2019,37 +1920,13 @@
                             </div>
                             <div class="interaction-item" onclick="toggleComments('${featured.id}', event)">
                                 <i class="ph ph-chat-circle"></i>
-                                <span id="comment-count-${featured.id}">${featured.comments?.length || 0}</span>
-                            </div>
-                        </div>
-
-                        <div class="comments-section" id="comments-${featured.id}" style="display: none;">
-                            <div class="comment-input-area">
-                                <input type="text" class="comment-input" placeholder="Add a comment... (max 150 chars)" maxlength="150" oninput="updateCharCount('${featured.id}')">
-                                <span class="comment-char-count">150/150</span>
-                                <button class="comment-submit" onclick="addComment('${featured.id}', event)" disabled>Post</button>
-                            </div>
-                            <div class="comments-list" id="comments-list-${featured.id}">
-                                <div style="color: #8a8d91; text-align: center; padding: 10px;">Loading comments...</div>
-                            </div>
-                            <div class="load-more-comments" id="load-more-comments-${featured.id}" style="display: none;" onclick="loadMoreComments('${featured.id}')">
-                                <i class="ph ph-arrow-down"></i> Load more comments
+                                <span>${featured.comments?.length || 0}</span>
                             </div>
                         </div>
 
                         ${featured.featured ? '<div style="margin-top: 10px;"><span style="background: #fab00520; color: #fab005; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem;">⭐ Featured</span></div>' : ''}
                     </div>
                 `;
-
-                if (!commentStates.has(featured.id)) {
-                    commentStates.set(featured.id, {
-                        comments: featured.comments || [],
-                        displayedCount: 0,
-                        hasMore: (featured.comments || []).length > COMMENTS_PER_BATCH
-                    });
-                }
-
-                await loadPostComments(featured.id, true);
             }
         }
 
@@ -2114,17 +1991,13 @@
             let html = '';
             for (const post of filteredPosts) {
                 if (post.type === 'video') {
-                    html += await renderVideoPost(post);
+                    html += renderVideoPost(post);
                 } else {
-                    html += await renderArticlePost(post);
+                    html += renderArticlePost(post);
                 }
             }
 
             newsListEl.innerHTML = html;
-
-            for (const post of filteredPosts) {
-                await loadPostComments(post.id, true);
-            }
         }
 
         window.clearSearch = function() {
@@ -2195,7 +2068,7 @@
         }
 
         // ============================================
-        // MARKETS PAGE - COINGECKO API INTEGRATION
+        // MARKETS PAGE - COINGECKO API via your proxy
         // ============================================
         function loadMarketsPage() {
             const contentEl = document.getElementById('mainContent');
@@ -2225,11 +2098,8 @@
                 const marketsGrid = document.getElementById('marketsGrid');
                 if (!marketsGrid) return;
                 
-                const response = await fetch(
-                    'https://api.coingecko.com/api/v3/coins/markets?' + 
-                    'vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=true' +
-                    `&x_cg_demo_api_key=${COINGECKO_API_KEY}`
-                );
+                // Use your API proxy instead of direct CoinGecko call
+                const response = await fetch(`${API_BASE}/markets`);
                 
                 const coins = await response.json();
                 
@@ -2254,7 +2124,7 @@
                         <div style="color: #ff5252; text-align: center; padding: 40px;">
                             <i class="ph ph-warning" style="font-size: 2rem; margin-bottom: 10px;"></i>
                             <p>Failed to load market data</p>
-                            <p style="font-size: 0.8rem; color: #8a8d91; margin-top: 10px;">${error.message}</p>
+                            <p style="font-size: 0.8rem; color: #8a8d91; margin-top: 10px;">Please try again later.</p>
                         </div>
                     `;
                 }
@@ -2335,166 +2205,29 @@
         }
 
         // ============================================
-        // COMMENT LAZY LOADING FUNCTIONS
+        // USER FUNCTIONS (simplified - no Firebase Auth)
         // ============================================
-        async function loadPostComments(postId, reset = false) {
-            try {
-                const postRef = doc(db, 'posts', postId);
-                const postDoc = await getDoc(postRef);
-                
-                if (!postDoc.exists()) return;
-                
-                const allComments = postDoc.data().comments || [];
-                
-                const sortedComments = allComments.sort((a, b) => 
-                    new Date(b.timestamp) - new Date(a.timestamp)
-                );
-                
-                let state = commentStates.get(postId);
-                if (!state) {
-                    state = {
-                        comments: sortedComments,
-                        displayedCount: 0,
-                        hasMore: sortedComments.length > COMMENTS_PER_BATCH
-                    };
-                    commentStates.set(postId, state);
-                } else {
-                    state.comments = sortedComments;
-                }
-                
-                if (reset) {
-                    state.displayedCount = COMMENTS_PER_BATCH;
-                } else {
-                    state.displayedCount = Math.min(state.displayedCount + COMMENTS_PER_BATCH, state.comments.length);
-                }
-                
-                state.hasMore = state.displayedCount < state.comments.length;
-                
-                const commentsList = document.getElementById(`comments-list-${postId}`);
-                const loadMoreBtn = document.getElementById(`load-more-comments-${postId}`);
-                
-                if (!commentsList) return;
-                
-                if (state.displayedCount === 0) {
-                    commentsList.innerHTML = '<div style="color: #8a8d91; text-align: center; padding: 10px;">No comments yet</div>';
-                    if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-                    return;
-                }
-                
-                const commentsToShow = state.comments.slice(0, state.displayedCount);
-                
-                commentsList.innerHTML = commentsToShow.map(comment => `
-                    <div class="comment-item">
-                        <div class="comment-header">
-                            <span class="comment-author">${comment.author}</span>
-                            <span class="comment-time">${comment.time}</span>
-                        </div>
-                        <div class="comment-text">${comment.text}</div>
-                    </div>
-                `).join('');
-                
-                if (loadMoreBtn) {
-                    loadMoreBtn.style.display = state.hasMore ? 'block' : 'none';
-                }
-                
-            } catch (error) {
-                console.error('Error loading comments:', error);
-            }
-        }
-
-        window.loadMoreComments = async function(postId) {
-            await loadPostComments(postId);
-        };
-
-        // ============================================
-        // NEWS FUNCTIONS
-        // ============================================
-        const expandedPosts = new Map();
-
-        async function loadUserLikes() {
-            if (!currentUser) return;
-            
-            try {
-                const q = query(collection(db, 'posts'));
-                const snapshot = await getDocs(q);
-                
-                userLikes.clear();
-                snapshot.forEach(doc => {
-                    const postData = doc.data();
-                    const likedBy = postData.likedBy || [];
-                    if (likedBy.includes(currentUser.uid)) {
-                        userLikes.set(doc.id, true);
-                    }
-                });
-            } catch (error) {
-                console.error('Error loading user likes:', error);
-            }
-        }
-
         function updateUserProfile() {
             const container = document.getElementById('userProfileContainer');
             if (!container) return;
             
-            if (currentUser) {
-                const photoURL = currentUser.photoURL;
-                const displayName = currentUser.displayName || 'User';
-                const email = currentUser.email || '';
-                const initial = displayName.charAt(0).toUpperCase();
-                
-                container.innerHTML = `
-                    <div class="user-profile">
-                        ${photoURL ? 
-                            `<img src="${photoURL}" class="user-avatar" style="object-fit: cover;">` : 
-                            `<div class="user-avatar">${initial}</div>`
-                        }
-                        <span class="user-name">${displayName.split(' ')[0]}</span>
-                        
-                        <div class="user-dropdown">
-                            <div class="dropdown-item">
-                                <i class="ph ph-user-circle"></i>
-                                ${displayName}
-                            </div>
-                            <div class="dropdown-item">
-                                <i class="ph ph-envelope"></i>
-                                ${email}
-                            </div>
-                            <div class="dropdown-divider"></div>
-                            <div class="dropdown-item" onclick="handleSignOut()">
-                                <i class="ph ph-sign-out"></i>
-                                Sign Out
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = `
-                    <button class="sign-in-btn" onclick="signInWithGoogle()">
-                        <i class="ph ph-google-logo"></i>
-                        Sign In
-                    </button>
-                `;
-            }
+            // Simple user profile using localStorage
+            const displayName = localStorage.getItem('userName') || 'Guest';
+            const initial = displayName.charAt(0).toUpperCase();
+            
+            container.innerHTML = `
+                <div class="user-profile" onclick="showPopup('User Menu', 'User features coming soon!')">
+                    <div class="user-avatar">${initial}</div>
+                    <span class="user-name">${displayName}</span>
+                </div>
+            `;
         }
 
-        window.signInWithGoogle = async function() {
-            try {
-                await signInWithPopup(auth, provider);
-                showPopup('Welcome!', 'You have successfully signed in.');
-            } catch (error) {
-                console.error('Sign-in error:', error);
-                showPopup('Error', 'Failed to sign in. Please try again.');
-            }
-        };
-
-        window.handleSignOut = async function() {
-            try {
-                await signOut(auth);
-                showPopup('Signed Out', 'You have been signed out successfully.');
-            } catch (error) {
-                console.error('Sign-out error:', error);
-                showPopup('Error', 'Failed to sign out.');
-            }
-        };
+        function showPopup(title, message) {
+            document.getElementById('popupTitle').textContent = title;
+            document.getElementById('popupMessage').textContent = message;
+            document.getElementById('popup').classList.add('show');
+        }
 
         function getRelativeTime(timestamp) {
             if (!timestamp) return 'Just now';
@@ -2526,11 +2259,7 @@
             });
         }
 
-        function showPopup(title, message) {
-            document.getElementById('popupTitle').textContent = title;
-            document.getElementById('popupMessage').textContent = message;
-            document.getElementById('popup').classList.add('show');
-        }
+        const expandedPosts = new Map();
 
         window.toggleReadMore = function(postId, isFeatured = false, event) {
             if (event) {
@@ -2560,177 +2289,43 @@
             }
         };
 
-        async function handleLike(postId, event) {
+        window.toggleLike = async function(postId, event) {
             if (event) {
                 event.stopPropagation();
             }
             
             try {
-                const postRef = doc(db, 'posts', postId);
-                const postDoc = await getDoc(postRef);
+                const result = await likePost(postId);
                 
-                if (!postDoc.exists()) return;
-                
-                const postData = postDoc.data();
-                const likedBy = postData.likedBy || [];
-                const hasLiked = likedBy.includes(currentUser.uid);
-                
-                let newLikes = postData.likes || 0;
-                
-                if (hasLiked) {
-                    newLikes = Math.max(0, newLikes - 1);
-                    await updateDoc(postRef, {
-                        likes: newLikes,
-                        likedBy: arrayRemove(currentUser.uid)
-                    });
-                    userLikes.set(postId, false);
-                } else {
-                    newLikes = newLikes + 1;
-                    await updateDoc(postRef, {
-                        likes: newLikes,
-                        likedBy: arrayUnion(currentUser.uid)
-                    });
-                    userLikes.set(postId, true);
-                }
-                
-                const postElement = document.getElementById(`post-${postId}`);
-                if (!postElement) return;
-                
-                const likeBtn = postElement.querySelector('.like-btn');
-                const likeCount = postElement.querySelector('.like-count');
-                
-                if (likeBtn && likeCount) {
-                    if (userLikes.get(postId)) {
-                        likeBtn.classList.add('liked');
-                    } else {
-                        likeBtn.classList.remove('liked');
+                if (result.success) {
+                    const postElement = document.getElementById(`post-${postId}`);
+                    if (!postElement) return;
+                    
+                    const likeBtn = postElement.querySelector('.like-btn');
+                    const likeCount = postElement.querySelector('.like-count');
+                    
+                    if (likeBtn && likeCount) {
+                        const currentlyLiked = userLikes.get(postId) || false;
+                        userLikes.set(postId, !currentlyLiked);
+                        
+                        if (!currentlyLiked) {
+                            likeBtn.classList.add('liked');
+                        } else {
+                            likeBtn.classList.remove('liked');
+                        }
+                        likeCount.textContent = result.likes;
                     }
-                    likeCount.textContent = newLikes;
                 }
-                
             } catch (error) {
-                console.error('Error toggling like:', error);
-                showPopup('Error', 'Failed to process like. Please try again.');
+                showPopup('Error', 'Failed to like post');
             }
-        }
-
-        window.toggleLike = function(postId, event) {
-            if (!currentUser) {
-                pendingAction = { type: 'like', postId, event };
-                signInWithGoogle();
-                return;
-            }
-            handleLike(postId, event);
         };
 
         window.toggleComments = function(postId, event) {
             if (event) {
                 event.stopPropagation();
             }
-            
-            if (!currentUser) {
-                pendingAction = { type: 'comment', postId, event };
-                signInWithGoogle();
-                return;
-            }
-            
-            const postElement = document.getElementById(`post-${postId}`);
-            if (!postElement) return;
-            
-            const commentsSection = document.getElementById(`comments-${postId}`);
-            if (commentsSection) {
-                const isHidden = commentsSection.style.display === 'none';
-                commentsSection.style.display = isHidden ? 'block' : 'none';
-                
-                if (isHidden) {
-                    loadPostComments(postId, true);
-                }
-            }
-        };
-
-        window.addComment = async function(postId, event) {
-            if (event) {
-                event.stopPropagation();
-            }
-            
-            if (!currentUser) {
-                pendingAction = { type: 'comment', postId, event };
-                signInWithGoogle();
-                return;
-            }
-            
-            const postElement = document.getElementById(`post-${postId}`);
-            if (!postElement) return;
-            
-            const input = postElement.querySelector('.comment-input');
-            const commentText = input.value.trim();
-            
-            if (!commentText) return;
-            
-            try {
-                const postRef = doc(db, 'posts', postId);
-                const postDoc = await getDoc(postRef);
-                
-                if (!postDoc.exists()) return;
-                
-                const newComment = {
-                    id: Date.now(),
-                    text: commentText,
-                    author: currentUser.displayName || 'Anonymous',
-                    authorId: currentUser.uid,
-                    authorPhoto: currentUser.photoURL,
-                    time: new Date().toLocaleString(),
-                    timestamp: new Date().toISOString()
-                };
-                
-                const existingComments = postDoc.data().comments || [];
-                const updatedComments = [newComment, ...existingComments];
-                
-                await updateDoc(postRef, {
-                    comments: updatedComments
-                });
-                
-                input.value = '';
-                updateCharCount(postId);
-                
-                const commentCountSpan = document.getElementById(`comment-count-${postId}`);
-                if (commentCountSpan) {
-                    commentCountSpan.textContent = updatedComments.length;
-                }
-                
-                commentStates.set(postId, {
-                    comments: updatedComments,
-                    displayedCount: 0,
-                    hasMore: updatedComments.length > COMMENTS_PER_BATCH
-                });
-                await loadPostComments(postId, true);
-                
-            } catch (error) {
-                console.error('Error adding comment:', error);
-                showPopup('Error', 'Failed to add comment. Please try again.');
-            }
-        };
-
-        window.updateCharCount = function(postId) {
-            const postElement = document.getElementById(`post-${postId}`);
-            if (!postElement) return;
-            
-            const input = postElement.querySelector('.comment-input');
-            const charCount = postElement.querySelector('.comment-char-count');
-            const submitBtn = postElement.querySelector('.comment-submit');
-            
-            if (input && charCount && submitBtn) {
-                const remaining = 150 - input.value.length;
-                charCount.textContent = `${remaining}/150`;
-                
-                if (remaining < 0 || remaining === 150 || input.value.trim().length === 0) {
-                    submitBtn.disabled = true;
-                    charCount.classList.add('limit');
-                } else {
-                    submitBtn.disabled = false;
-                    charCount.classList.remove('limit');
-                }
-            }
+            showPopup('Comments', 'Comments feature coming soon!');
         };
 
         function renderTrending() {
@@ -2784,6 +2379,7 @@
         }
 
         // Initialize
+        updateUserProfile();
         renderTrending();
         setupEventListeners();
         navigateTo('home');
