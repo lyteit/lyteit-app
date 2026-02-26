@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>lyteit.com - Financial & Crypto News</title>
-    <!-- Favicon -->
+    <!-- Favicon (fixes the 404 error) -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Chart.js for simple charts -->
@@ -28,93 +28,6 @@
             position: relative;
         }
 
-        /* Privacy Policy Overlay */
-        .privacy-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: #000;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .privacy-overlay.hidden {
-            display: none;
-        }
-
-        .privacy-card {
-            background: #15171a;
-            border: 1px solid #333;
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 800px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-        }
-
-        .privacy-card h1 {
-            color: #fab005;
-            margin-bottom: 20px;
-            font-size: 1.8rem;
-        }
-
-        .privacy-card h2 {
-            color: #fff;
-            margin: 20px 0 10px;
-            font-size: 1.2rem;
-        }
-
-        .privacy-card p {
-            color: #8a8d91;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        .privacy-card ul {
-            color: #8a8d91;
-            margin-left: 20px;
-            margin-bottom: 15px;
-        }
-
-        .privacy-card li {
-            margin-bottom: 5px;
-        }
-
-        .privacy-footer {
-            position: sticky;
-            bottom: 0;
-            background: #15171a;
-            padding: 20px 0 0;
-            margin-top: 20px;
-            border-top: 1px solid #333;
-        }
-
-        .accept-btn {
-            background: #fab005;
-            color: #000;
-            border: 1px solid #fab005;
-            padding: 15px 30px;
-            border-radius: 30px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.2s ease;
-        }
-
-        .accept-btn:hover {
-            opacity: 0.9;
-        }
-
-        /* Header */
         .sticky-header {
             position: sticky;
             top: 0;
@@ -146,114 +59,6 @@
             display: flex;
             align-items: center;
             gap: 20px;
-            position: relative;
-        }
-
-        .profile-container {
-            position: relative;
-        }
-
-        .profile-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #1c1f24;
-            border: 1px solid #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #8a8d91;
-            font-size: 1.3rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            overflow: hidden;
-        }
-
-        .profile-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .profile-icon:hover {
-            border-color: #fab005;
-            color: #fab005;
-            background: #2a2f38;
-        }
-
-        .profile-dropdown {
-            position: absolute;
-            top: 50px;
-            right: 0;
-            width: 250px;
-            background: #1c1f24;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 10px 0;
-            display: none;
-            z-index: 1000;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-
-        .profile-dropdown.show {
-            display: block;
-        }
-
-        .dropdown-user-info {
-            padding: 15px;
-            border-bottom: 1px solid #333;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .dropdown-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            overflow: hidden;
-        }
-
-        .dropdown-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .dropdown-user-details {
-            flex: 1;
-        }
-
-        .dropdown-username {
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .dropdown-email {
-            font-size: 0.7rem;
-            color: #8a8d91;
-            word-break: break-all;
-        }
-
-        .dropdown-item {
-            padding: 12px 20px;
-            color: #fff;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .dropdown-item:hover {
-            background: #2a2f38;
-            color: #fab005;
-        }
-
-        .dropdown-item i {
-            font-size: 1.2rem;
-            color: #fab005;
         }
 
         .desktop-menu {
@@ -309,166 +114,150 @@
             color: #fab005;
         }
 
-        /* Popup Styles */
-        .auth-popup-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.9);
-            z-index: 1000;
-            display: none;
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1c1f24;
+            border: 1px solid #333;
+            display: flex;
             align-items: center;
             justify-content: center;
+            color: #8a8d91;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
         }
 
-        .auth-popup-overlay.show {
-            display: flex;
+        .profile-icon:hover {
+            border-color: #fab005;
+            color: #fab005;
+            background: #2a2f38;
         }
 
-        .auth-popup {
+        .profile-icon.logged-in {
+            border-color: #fab005;
+            background: #2a2f38;
+        }
+
+        .profile-dropdown {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 280px;
             background: #15171a;
             border: 1px solid #333;
-            border-radius: 20px;
-            padding: 30px;
-            width: 90%;
-            max-width: 400px;
-            max-height: 90vh;
-            overflow-y: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 1000;
         }
 
-        .auth-popup h2 {
+        .profile-dropdown.show {
+            display: block;
+        }
+
+        .profile-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .profile-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fab005;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-username {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .profile-email {
+            font-size: 0.7rem;
+            color: #8a8d91;
+        }
+
+        .profile-badge {
+            display: inline-block;
+            background: #fab00520;
             color: #fab005;
-            margin-bottom: 20px;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-top: 4px;
+        }
+
+        .profile-menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #8a8d91;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #222;
+        }
+
+        .profile-menu-item:hover {
+            background: #1e2128;
+            color: #fab005;
+        }
+
+        .profile-menu-item.logout {
+            color: #ff5252;
+        }
+
+        .profile-menu-item.logout:hover {
+            background: #ff525220;
+        }
+
+        .profile-footer {
+            padding: 15px 20px;
+            font-size: 0.7rem;
+            color: #8a8d91;
             text-align: center;
         }
 
-        .avatar-selector {
-            margin-bottom: 20px;
-        }
-
-        .avatar-selector label {
-            display: block;
-            margin-bottom: 10px;
-            color: #8a8d91;
-        }
-
-        .avatar-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
+        .auth-buttons {
+            display: flex;
             gap: 10px;
-        }
-
-        .avatar-option {
-            aspect-ratio: 1;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 2px solid #333;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .avatar-option:hover {
-            border-color: #8a8d91;
-        }
-
-        .avatar-option.selected {
-            border-color: #fab005;
-            transform: scale(1.05);
-        }
-
-        .avatar-option img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #8a8d91;
-            font-size: 0.9rem;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            background: #1e2128;
-            border: 1px solid #333;
-            border-radius: 10px;
-            color: white;
-            font-size: 1rem;
-            outline: none;
-        }
-
-        .form-group input:focus {
-            border-color: #fab005;
-        }
-
-        .char-count {
-            text-align: right;
-            color: #8a8d91;
-            font-size: 0.7rem;
-            margin-top: 5px;
+            margin-top: 10px;
         }
 
         .auth-btn {
-            width: 100%;
-            padding: 14px;
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .auth-btn.signup {
             background: #fab005;
             color: #000;
-            border: none;
-            border-radius: 30px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            margin: 20px 0 15px;
         }
 
-        .auth-switch {
-            text-align: center;
-            color: #8a8d91;
-        }
-
-        .auth-switch span {
+        .auth-btn.login {
+            background: transparent;
+            border: 1px solid #fab005;
             color: #fab005;
-            cursor: pointer;
         }
 
-        .auth-switch span:hover {
-            text-decoration: underline;
-        }
-
-        .close-popup {
-            text-align: right;
-            margin-bottom: 10px;
-        }
-
-        .close-popup i {
-            font-size: 1.5rem;
-            color: #8a8d91;
-            cursor: pointer;
-        }
-
-        .close-popup i:hover {
-            color: #ff5252;
-        }
-
-        .error-message {
-            color: #ff5252;
-            font-size: 0.85rem;
-            margin-top: 5px;
-        }
-
-        .success-message {
-            color: #00c853;
-            font-size: 0.85rem;
-            margin-top: 5px;
+        .auth-btn:hover {
+            opacity: 0.9;
         }
 
         .search-container {
@@ -560,34 +349,721 @@
             margin-bottom: 15px;
         }
 
-        .rss-refresh-btn {
-            background: #1e2128;
-            border: 1px solid #333;
-            color: #fab005;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            cursor: pointer;
-            display: inline-flex;
+        .auth-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
             align-items: center;
-            gap: 5px;
-            margin-left: auto;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .auth-popup.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .auth-container {
+            background: #15171a;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid #333;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .auth-popup.show .auth-container {
+            transform: scale(1);
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #8a8d91;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 8px;
+        }
+
+        .auth-tab.active {
+            background: #fab00520;
+            color: #fab005;
+        }
+
+        .auth-form {
+            display: block;
+        }
+
+        .auth-form.hidden {
+            display: none;
+        }
+
+        .avatar-selection {
+            margin-bottom: 20px;
+        }
+
+        .avatar-label {
+            color: #8a8d91;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .avatar-option {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            overflow: hidden;
             transition: all 0.2s ease;
         }
 
-        .rss-refresh-btn:hover {
-            border-color: #fab005;
-            background: #2a2f38;
+        .avatar-option:hover {
+            transform: scale(1.05);
         }
 
-        .rss-source-badge {
-            font-size: 0.65rem;
-            color: #fab005;
-            display: inline-block;
-            background: #fab00520;
-            padding: 2px 8px;
+        .avatar-option.selected {
+            border-color: #fab005;
+            box-shadow: 0 0 0 2px rgba(250, 176, 5, 0.3);
+        }
+
+        .avatar-option img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            color: #8a8d91;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            background: #1c1f24;
+            border: 1px solid #333;
             border-radius: 12px;
-            margin: 4px 0;
+            padding: 12px 15px;
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            border-color: #fab005;
+            box-shadow: 0 0 0 2px rgba(250, 176, 5, 0.2);
+        }
+
+        .form-input.error {
+            border-color: #ff5252;
+        }
+
+        .error-message {
+            color: #ff5252;
+            font-size: 0.7rem;
+            margin-top: 5px;
+        }
+
+        .password-hint {
+            color: #8a8d91;
+            font-size: 0.65rem;
+            margin-top: 5px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: #fab005;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .auth-note {
+            text-align: center;
+            margin-top: 15px;
+            color: #8a8d91;
+            font-size: 0.8rem;
+        }
+
+        .auth-note span {
+            color: #fab005;
+            cursor: pointer;
+        }
+
+        .auth-note span:hover {
+            text-decoration: underline;
+        }
+
+        .close-auth {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1c1f24;
+            border: 1px solid #333;
+            color: #8a8d91;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .close-auth:hover {
+            border-color: #fab005;
+            color: #fab005;
+        }
+
+        .search-results-header {
+            padding: 10px 0;
+            color: #8a8d91;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #333;
+            margin-bottom: 15px;
+        }
+        .clear-search {
+            color: #fab005;
+            cursor: pointer;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+        .clear-search:hover {
+            text-decoration: underline;
+        }
+
+        .featured-card { 
+            padding: 0 0 20px 0; 
+            margin-bottom: 20px;
+        }
+        .featured-img { 
+            width: 100%; 
+            height: 200px; 
+            border-radius: 12px; 
+            object-fit: cover; 
+            margin-bottom: 12px; 
+        }
+        .featured-title { 
+            font-size: 1.3rem; 
+            line-height: 1.3; 
+            margin-bottom: 8px; 
+            font-weight: 600;
+        }
+        .featured-content {
+            color: #8a8d91;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+
+        .featured-content a,
+        .news-item-content a,
+        .post-content-container a,
+        .featured-content a:link,
+        .news-item-content a:link,
+        .post-content-container a:link,
+        .featured-content a:visited,
+        .news-item-content a:visited,
+        .post-content-container a:visited,
+        .featured-content a:active,
+        .news-item-content a:active,
+        .post-content-container a:active {
+            color: #fab005 !important;
+            text-decoration: none;
+            border-bottom: 1px dotted #fab005;
+        }
+
+        .featured-content a:hover,
+        .news-item-content a:hover,
+        .post-content-container a:hover {
+            color: #fab005 !important;
+            opacity: 0.8;
+            border-bottom: 1px solid #fab005;
+        }
+
+        .read-more-btn {
+            background: none;
+            border: none;
+            color: #fab005;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 5px 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .read-more-btn:hover {
+            opacity: 0.8;
+        }
+
+        @media (min-width: 768px) {
+            .featured-img {
+                height: 350px;
+            }
+            .featured-title {
+                font-size: 1.8rem;
+            }
+        }
+
+        .video-card {
+            background: #15171a;
+            border: 1px solid #333;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+        .video-card:hover {
+            border-color: #fab005;
+        }
+        .video-header {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .video-header i {
+            color: #ff0000;
+            font-size: 1.5rem;
+        }
+        .video-title {
+            font-size: 1rem;
+            font-weight: 600;
+            flex: 1;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            cursor: pointer;
+        }
+        .video-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .video-play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.2s ease;
+        }
+        .video-play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .video-play-button {
+            width: 60px;
+            height: 60px;
+            background: #ff0000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(255,0,0,0.3);
+        }
+        .video-description {
+            padding: 15px;
+            color: #8a8d91;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            border-top: 1px solid #333;
+        }
+
+        .news-list { 
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+
+        @media (min-width: 768px) {
+            .news-list {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            
+            .news-item {
+                border-top: none;
+                border: 1px solid #222;
+                border-radius: 12px;
+                padding: 15px;
+                transition: all 0.2s ease;
+                height: fit-content;
+            }
+            
+            .news-item:hover {
+                border-color: #fab005;
+                background: rgba(250, 176, 5, 0.05);
+                transform: translateY(-2px);
+            }
+        }
+
+        .news-item { 
+            display: flex; 
+            gap: 15px; 
+            padding: 15px 0; 
+            border-top: 1px solid #222; 
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .news-item:hover {
+            background: rgba(255,255,255,0.02);
+        }
+        .news-item-img { 
+            width: 75px; 
+            height: 75px; 
+            border-radius: 8px; 
+            object-fit: cover; 
+        }
+        .news-item-content { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+        }
+        .news-item-title { 
+            font-size: 0.9rem; 
+            font-weight: 500; 
+            line-height: 1.4; 
+        }
+        .news-item-content .post-content-container {
+            color: #8a8d91;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            margin: 5px 0;
+        }
+
+        .load-more-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0 20px;
+        }
+        .load-more-btn {
+            background: #1e2128;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .load-more-btn:hover {
+            border-color: #fab005;
+            background: #2a2f38;
+            transform: translateY(-2px);
+        }
+        .load-more-btn i {
+            color: #fab005;
+        }
+        .load-more-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .meta-info { 
+            display: flex; 
+            justify-content: space-between; 
+            color: #8a8d91; 
+            font-size: 0.75rem; 
+            margin-top: 6px;
+        }
+
+        .explore-header {
+            margin-bottom: 20px;
+        }
+        .explore-search-wrapper {
+            background: #1c1f24;
+            display: flex;
+            align-items: center;
+            padding: 12px 18px;
+            border-radius: 12px;
+            gap: 10px;
+            border: 1px solid #333;
+            transition: all 0.2s ease;
+            margin-bottom: 25px;
+        }
+        .explore-search-wrapper:focus-within {
+            border-color: #fab005;
+            box-shadow: 0 0 0 2px rgba(250, 176, 5, 0.2);
+        }
+        .explore-search-icon {
+            color: #8a8d91;
+            font-size: 1.2rem;
+        }
+        .explore-search-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 0.95rem;
+            width: 100%;
+            outline: none;
+        }
+        .explore-categories {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .explore-category-tag {
+            background: #1e2128;
+            padding: 6px 14px;
+            border-radius: 30px;
+            border: 1px solid #333;
+            color: #8a8d91;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .explore-category-tag:hover {
+            border-color: #fab005;
+            color: #fab005;
+        }
+        .explore-category-tag.active {
+            background: #fab00520;
+            border-color: #fab005;
+            color: #fab005;
+        }
+        .explore-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        @media (min-width: 768px) {
+            .explore-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+        }
+        .explore-card {
+            background: #15171a;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+        .explore-card:hover {
+            border-color: #fab005;
+            transform: translateY(-2px);
+        }
+        .explore-card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+        .explore-icon {
+            width: 45px;
+            height: 45px;
+            background: #1e2128;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fab005;
+            font-size: 1.4rem;
+        }
+        .explore-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            flex: 1;
+        }
+        .explore-category {
+            font-size: 0.7rem;
+            color: #fab005;
+            background: #fab00520;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 12px;
+            align-self: flex-start;
+        }
+        .explore-description {
+            color: #8a8d91;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            flex: 1;
+        }
+        .explore-url {
+            color: #fab005;
+            font-size: 0.75rem;
+            word-break: break-all;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border-top: 1px solid #333;
+            padding-top: 12px;
+            margin-top: auto;
+        }
+
+        .markets-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+        }
+        .markets-refresh {
+            color: #8a8d91;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .markets-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        @media (min-width: 768px) {
+            .markets-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+        }
+        .coin-card {
+            background: #15171a;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.2s ease;
+        }
+        .coin-card:hover {
+            border-color: #fab005;
+        }
+        .coin-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .coin-rank {
+            color: #8a8d91;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .coin-name {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .coin-symbol {
+            color: #8a8d91;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+        .coin-price {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .coin-change {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .coin-change.positive {
+            color: #00c853;
+        }
+        .coin-change.negative {
+            color: #ff5252;
+        }
+        .coin-chart {
+            margin-top: 15px;
+            height: 60px;
+            width: 100%;
+        }
+
+        .footer-section {
+            margin-top: 40px;
+            padding: 30px 0 20px;
+            border-top: 1px solid #222;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .footer-grid {
+                grid-template-columns: 1.5fr 1fr;
+                align-items: start;
+            }
         }
 
         .newsletter-card {
@@ -624,6 +1100,7 @@
             padding: 12px 15px;
             color: white;
             outline: none;
+            transition: border 0.2s ease;
         }
         .newsletter-input:focus {
             border-color: #fab005;
@@ -636,21 +1113,153 @@
             padding: 0 25px;
             font-weight: 600;
             cursor: pointer;
+            transition: opacity 0.2s ease;
             height: 45px;
-            white-space: nowrap;
         }
-        .newsletter-status {
+        .newsletter-button:hover {
+            opacity: 0.9;
+        }
+        .newsletter-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .app-promo {
+            text-align: center;
+        }
+        .app-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
             margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            display: none;
+            flex-wrap: wrap;
         }
-        .newsletter-status.success {
-            display: block;
-            background: #00c85320;
-            color: #00c853;
-            border: 1px solid #00c853;
+        .app-button {
+            background: #15171a;
+            border: 1px solid #333;
+            border-radius: 30px;
+            padding: 10px 25px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .app-button:hover {
+            border-color: #fab005;
+            transform: translateY(-2px);
+        }
+
+        .back-to-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 15px;
+            margin: 30px 0 20px;
+            background: #15171a;
+            border-radius: 30px;
+            cursor: pointer;
+            border: 1px solid #333;
+            transition: all 0.2s ease;
+        }
+        .back-to-top:hover {
+            border-color: #fab005;
+            background: #1e2128;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            padding: 20px 0;
+            border-top: 1px solid #222;
+            flex-wrap: wrap;
+        }
+        .footer-link {
+            color: #8a8d91;
+            text-decoration: none;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .footer-link:hover {
+            color: #fab005;
+        }
+        .copyright {
+            text-align: center;
+            color: #8a8d91;
+            font-size: 0.7rem;
+            padding: 10px 0;
+        }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .popup-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .popup-content {
+            background: #15171a;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid #444;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .popup-overlay.show .popup-content {
+            transform: scale(1);
+        }
+        .popup-icon {
+            font-size: 2.5rem;
+            color: #fab005;
+            margin-bottom: 15px;
+        }
+        .popup-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .popup-message {
+            color: #8a8d91;
+            margin-bottom: 20px;
+        }
+        .popup-button {
+            background: #fab005;
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8a8d91;
+        }
+        .loading i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: #fab005;
         }
 
         .bottom-nav {
@@ -717,6 +1326,15 @@
             transform: scale(1.05);
         }
 
+        .article-featured {
+            background: #fab00520;
+            color: #fab005;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            display: inline-block;
+        }
+
         .cache-indicator {
             position: fixed;
             bottom: 100px;
@@ -731,79 +1349,134 @@
             opacity: 0.7;
             pointer-events: none;
         }
+        
+        .rss-refresh-btn {
+            background: #1e2128;
+            border: 1px solid #333;
+            color: #fab005;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: auto;
+            transition: all 0.2s ease;
+        }
+        .rss-refresh-btn:hover {
+            border-color: #fab005;
+            background: #2a2f38;
+        }
+        .rss-source-badge {
+            font-size: 0.65rem;
+            color: #fab005;
+            display: inline-block;
+            background: #fab00520;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin: 4px 0;
+        }
     </style>
 </head>
 <body>
-    <!-- Privacy Policy Overlay -->
-    <div class="privacy-overlay" id="privacyOverlay">
-        <div class="privacy-card" id="privacyCard">
-            <h1>Privacy Policy</h1>
-            <p><strong>Last Updated: February 26, 2026</strong></p>
-            
-            <h2>1. INTRODUCTION</h2>
-            <p>Welcome to lyteit.com ("we," "our," or "us"). We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our mobile application.</p>
-            
-            <h2>2. INFORMATION WE COLLECT</h2>
-            <p><strong>2.1 Information You Provide to Us</strong><br>
-            - Account Information: When you create an account, we collect your username, email address, and avatar selection.<br>
-            - Communications: Information you provide when contacting us.</p>
-            
-            <p><strong>2.2 Information Automatically Collected for Advertising and Analytics</strong><br>
-            When you use our service, we automatically collect certain information for advertising and analytics purposes, including:</p>
-            <ul>
-                <li>IP Address: Used to determine general location and prevent fraud</li>
-                <li>Device Information: Device type, operating system, browser type, and version</li>
-                <li>Device Identifiers: Advertising ID (for ad personalization)</li>
-                <li>Usage Data: Pages visited, time spent, clicks, and interactions with content</li>
-                <li>Referral Source: How you arrived at our site</li>
-            </ul>
-            
-            <h2>3. HOW WE USE YOUR INFORMATION</h2>
-            <p>We use the information we collect to:</p>
-            <ul>
-                <li>Provide, operate, and maintain our website and app</li>
-                <li>Deliver and personalize advertisements</li>
-                <li>Measure ad performance and effectiveness</li>
-                <li>Improve user experience and content</li>
-                <li>Communicate with you about updates and news</li>
-                <li>Monitor and analyze usage patterns</li>
-                <li>Protect against unauthorized access and fraud</li>
-                <li>Comply with legal obligations</li>
-            </ul>
-            
-            <h2>4. THIRD-PARTY SERVICES</h2>
-            <p>Our service integrates with various third-party providers to function properly. These include authentication services, analytics providers, advertising partners, content providers, and infrastructure services. These third parties may collect or receive certain information about you as described in Section 2.2.</p>
-            
-            <h2>5. SMART LINKS AND MONETIZATION</h2>
-            <p>Our service uses smart links that may redirect you to third-party websites or platforms. When you click on these links, we may receive compensation when you visit or take specific actions on partner sites. These links are identified with clear labeling (e.g., "Sponsored Link").</p>
-            
-            <h2>6. COOKIES AND TRACKING TECHNOLOGIES</h2>
-            <p>We use cookies and similar technologies to remember your preferences, understand how you use our site, deliver relevant advertisements, track ad performance, and analyze traffic patterns. You can control cookies through your browser settings.</p>
-            
-            <h2>7. DATA SHARING AND DISCLOSURE</h2>
-            <p>We do not sell your personal information. We may share information with advertising partners to deliver and measure ads, with your consent, for legal reasons, to protect our rights and safety, and with service providers who assist in operating our platform.</p>
-            
-            <h2>8. YOUR RIGHTS AND CHOICES</h2>
-            <p>Depending on your location, you may have the right to access your personal information, correct inaccurate data, delete your data, opt-out of targeted advertising, object to processing, and data portability. To exercise these rights, contact us at: hello@lyteit.com</p>
-            
-            <h2>9. CONTACT US</h2>
-            <p>If you have questions about this Privacy Policy, please contact us:<br>
-            Email: hello@lyteit.com<br>
-            Website: https://lyteit.com</p>
-            
-            <div class="privacy-footer">
-                <button class="accept-btn" id="acceptPrivacyBtn">Accept & Continue</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main App Container -->
-    <div class="app-container" id="appContainer" style="display: none;">
+    <div class="app-container">
         <div class="cache-indicator" id="cacheIndicator">
             <i class="ph ph-database"></i> Cache enabled
         </div>
 
-        <!-- Header -->
+        <!-- Auth Popup -->
+        <div class="auth-popup" id="authPopup">
+            <div class="close-auth" id="closeAuth">
+                <i class="ph ph-x"></i>
+            </div>
+            <div class="auth-container">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="loginTab" onclick="switchAuthTab('login')">Login</button>
+                    <button class="auth-tab" id="signupTab" onclick="switchAuthTab('signup')">Sign Up</button>
+                </div>
+
+                <!-- Login Form -->
+                <div class="auth-form" id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="loginEmail" placeholder="your@email.com">
+                        <div class="error-message" id="loginEmailError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="loginPassword" placeholder="••••••••">
+                        <div class="error-message" id="loginPasswordError"></div>
+                    </div>
+                    <button class="submit-btn" id="loginBtn" onclick="handleLogin()">Log In</button>
+                    <div class="auth-note">
+                        Don't have an account? <span onclick="switchAuthTab('signup')">Sign up</span>
+                    </div>
+                </div>
+
+                <!-- Signup Form -->
+                <div class="auth-form hidden" id="signupForm">
+                    <div class="avatar-selection">
+                        <label class="form-label">Choose Avatar (cannot be changed later)</label>
+                        <div class="avatar-grid" id="avatarGrid">
+                            <div class="avatar-option" onclick="selectAvatar('https://iili.io/qf1x1K7.png')">
+                                <img src="https://iili.io/qf1x1K7.png" alt="Avatar 1">
+                            </div>
+                            <div class="avatar-option" onclick="selectAvatar('https://iili.io/qf1IOa1.png')">
+                                <img src="https://iili.io/qf1IOa1.png" alt="Avatar 2">
+                            </div>
+                            <div class="avatar-option" onclick="selectAvatar('https://iili.io/qf1TCox.jpg')">
+                                <img src="https://iili.io/qf1TCox.jpg" alt="Avatar 3">
+                            </div>
+                            <div class="avatar-option" onclick="selectAvatar('https://iili.io/qf1TZ0B.jpg')">
+                                <img src="https://iili.io/qf1TZ0B.jpg" alt="Avatar 4">
+                            </div>
+                            <div class="avatar-option" onclick="selectAvatar('https://iili.io/qf1uxzG.jpg')">
+                                <img src="https://iili.io/qf1uxzG.jpg" alt="Avatar 5">
+                            </div>
+                            <div class="avatar-option" onclick="selectAvatar('https://iili.io/qf1AL8P.jpg')">
+                                <img src="https://iili.io/qf1AL8P.jpg" alt="Avatar 6">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Username (max 9 characters)</label>
+                        <input type="text" class="form-input" id="signupUsername" maxlength="9" placeholder="JohnDoe">
+                        <div class="error-message" id="usernameError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="signupEmail" placeholder="your@email.com">
+                        <div class="error-message" id="signupEmailError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password (3-8 characters)</label>
+                        <input type="password" class="form-input" id="signupPassword" placeholder="••••••••" minlength="3" maxlength="8">
+                        <div class="password-hint">Must be 3-8 characters long</div>
+                        <div class="error-message" id="signupPasswordError"></div>
+                    </div>
+
+                    <button class="submit-btn" id="signupBtn" onclick="handleSignup()">Create Account</button>
+                    <div class="auth-note">
+                        Already have an account? <span onclick="switchAuthTab('login')">Log in</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success/Info Popup -->
+        <div class="popup-overlay" id="popup">
+            <div class="popup-content">
+                <div class="popup-icon"><i class="ph ph-rocket"></i></div>
+                <div class="popup-title" id="popupTitle">Coming Soon!</div>
+                <div class="popup-message" id="popupMessage">This feature is still in development</div>
+                <button class="popup-button" id="closePopup">Got it</button>
+            </div>
+        </div>
+
         <div class="sticky-header">
             <div class="top-header">
                 <div class="logo" id="logo">
@@ -818,12 +1491,25 @@
                 </div>
 
                 <div class="header-right">
-                    <div class="profile-container" id="profileContainer">
-                        <div class="profile-icon" id="profileIcon">
-                            <i class="ph ph-user"></i>
+                    <div class="profile-icon" id="profileIcon">
+                        <i class="ph ph-user"></i>
+                    </div>
+                    <!-- Profile Dropdown -->
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <div class="profile-header" id="profileHeader">
+                            <img src="" alt="Avatar" class="profile-avatar" id="profileAvatar">
+                            <div class="profile-info">
+                                <div class="profile-username" id="profileUsername"></div>
+                                <div class="profile-email" id="profileEmail"></div>
+                                <div class="profile-badge" id="profileBadge">Newsletter Subscribed</div>
+                            </div>
                         </div>
-                        <div class="profile-dropdown" id="profileDropdown">
-                            <!-- Dropdown content will be populated by JavaScript -->
+                        <div class="profile-menu-item logout" id="logoutBtn" onclick="handleLogout()">
+                            <i class="ph ph-sign-out"></i>
+                            <span>Logout</span>
+                        </div>
+                        <div class="profile-footer">
+                            Account created • Non-editable avatar
                         </div>
                     </div>
                     <i class="ph ph-bell bell-icon"></i>
@@ -840,11 +1526,9 @@
             <div id="homeTrending" class="trending-container"></div>
         </div>
 
-        <!-- Content -->
         <div class="scrollable-content" id="scrollableContent">
             <div class="main-content-area" id="mainContent"></div>
 
-            <!-- Footer -->
             <div class="footer-section">
                 <div class="footer-grid">
                     <div class="newsletter-card">
@@ -854,20 +1538,19 @@
                             Get the top 5 crypto stories delivered to your inbox daily. Zero spam.
                         </div>
                         <div class="newsletter-form">
-                            <input type="email" class="newsletter-input" id="newsletterEmail" placeholder="your@email.com" readonly>
-                            <button class="newsletter-button" id="subscribeBtn">Subscribe</button>
+                            <input type="email" class="newsletter-input" id="newsletterEmail" placeholder="your@email.com">
+                            <button class="newsletter-button" id="subscribeBtn" onclick="handleNewsletterSubscribe()">Subscribe</button>
                         </div>
-                        <div class="newsletter-status" id="newsletterStatus"></div>
                     </div>
 
                     <div class="app-promo">
                         <h3 style="margin-bottom: 10px;">Take Us Everywhere</h3>
                         <div class="app-buttons">
-                            <div class="app-button" id="appStoreBtn">
+                            <div class="app-button" id="appStoreBtn" onclick="showPopup('App Store', 'iOS app coming soon!')">
                                 <i class="ph-fill ph-apple-logo"></i>
                                 <span>App Store</span>
                             </div>
-                            <div class="app-button" id="playStoreBtn">
+                            <div class="app-button" id="playStoreBtn" onclick="showPopup('Google Play', 'Android app coming soon!')">
                                 <i class="ph-fill ph-google-play-logo"></i>
                                 <span>Google Play</span>
                             </div>
@@ -881,16 +1564,15 @@
                 </div>
 
                 <div class="footer-links">
-                    <span class="footer-link" id="aboutLink">About</span>
-                    <span class="footer-link" id="privacyLink">Privacy</span>
-                    <span class="footer-link" id="termsLink">Terms</span>
-                    <span class="footer-link" id="contactLink">Contact</span>
+                    <span class="footer-link" id="aboutLink" onclick="showPopup('About', 'Your trusted crypto and finance news platform')">About</span>
+                    <span class="footer-link" id="privacyLink" onclick="showPopup('Privacy', 'Privacy policy coming soon!')">Privacy</span>
+                    <span class="footer-link" id="termsLink" onclick="showPopup('Terms', 'Terms of service coming soon!')">Terms</span>
+                    <span class="footer-link" id="contactLink" onclick="showPopup('Contact', 'Email: hello@lyteit.com')">Contact</span>
                 </div>
                 <div class="copyright">⚡ lyteit.com © 2026 · All rights reserved</div>
             </div>
         </div>
 
-        <!-- Bottom Nav -->
         <nav class="bottom-nav">
             <button class="nav-item active" onclick="navigateTo('home')" id="nav-home">
                 <i class="ph-fill ph-house"></i>
@@ -914,100 +1596,32 @@
         </nav>
     </div>
 
-    <!-- Auth Popups -->
-    <div class="auth-popup-overlay" id="signupPopup">
-        <div class="auth-popup">
-            <div class="close-popup">
-                <i class="ph ph-x" onclick="closeAuthPopups()"></i>
-            </div>
-            <h2>Create Account</h2>
-            
-            <div class="avatar-selector">
-                <label>Choose Avatar</label>
-                <div class="avatar-grid" id="avatarGrid">
-                    <!-- Avatars will be populated by JavaScript -->
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Username (max 9 characters)</label>
-                <input type="text" id="signupUsername" maxlength="9">
-                <div class="char-count"><span id="usernameCount">0</span>/9</div>
-            </div>
-
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="signupEmail">
-            </div>
-
-            <div class="form-group">
-                <label>Password (3-8 characters)</label>
-                <input type="password" id="signupPassword" maxlength="8">
-                <div class="char-count"><span id="passwordCount">0</span>/8</div>
-            </div>
-
-            <div id="signupError" class="error-message"></div>
-
-            <button class="auth-btn" onclick="handleSignup()">Sign Up</button>
-            <div class="auth-switch">
-                Already have an account? <span onclick="showLogin()">Login</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="auth-popup-overlay" id="loginPopup">
-        <div class="auth-popup">
-            <div class="close-popup">
-                <i class="ph ph-x" onclick="closeAuthPopups()"></i>
-            </div>
-            <h2>Login</h2>
-
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="loginEmail">
-            </div>
-
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="loginPassword">
-            </div>
-
-            <div id="loginError" class="error-message"></div>
-
-            <button class="auth-btn" onclick="handleLogin()">Login</button>
-            <div class="auth-switch">
-                Don't have an account? <span onclick="showSignup()">Sign Up</span>
-            </div>
-        </div>
-    </div>
+    <script src='https://cdn.jotfor.ms/agent/embedjs/019c905c4c0c792b87d26b18bd0154e1faf8/embed.js'></script>
 
     <script type="module">
         // ============================================
-        // FIREBASE IMPORTS
+        // FIREBASE (with Authentication)
         // ============================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            enableIndexedDbPersistence,
+            collection,
+            getDocs,
+            query,
+            orderBy,
+            doc,
+            setDoc,
+            getDoc
+        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
         import { 
             getAuth, 
             createUserWithEmailAndPassword,
             signInWithEmailAndPassword,
             signOut,
-            onAuthStateChanged 
+            onAuthStateChanged
         } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc,
-            setDoc,
-            getDoc,
-            collection,
-            getDocs,
-            query,
-            orderBy,
-            enableIndexedDbPersistence
-        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-        // ============================================
-        // FIREBASE CONFIG
-        // ============================================
         const firebaseConfig = {
             apiKey: "AIzaSyAWsW8NaC-fs50D1hXganYW9gPCDUXRaMc",
             authDomain: "lyteit.firebaseapp.com",
@@ -1018,59 +1632,29 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
-
+        const auth = getAuth(app);
+        
         enableIndexedDbPersistence(db).catch((err) => {
             if (err.code == 'failed-precondition') {
                 console.log('Persistence failed: Multiple tabs open');
+                document.getElementById('cacheIndicator').innerHTML = '<i class="ph ph-warning"></i> Multiple tabs - cache limited';
             } else if (err.code == 'unimplemented') {
                 console.log('Persistence not supported');
+                document.getElementById('cacheIndicator').innerHTML = '<i class="ph ph-warning"></i> Cache not supported';
             }
         });
 
         // ============================================
-        // AVATAR LIST
-        // ============================================
-        const avatarList = [
-            'https://iili.io/qf1x1K7.png',
-            'https://iili.io/qf1IOa1.png',
-            'https://iili.io/qf1TCox.jpg',
-            'https://iili.io/qf1TZ0B.jpg',
-            'https://iili.io/qf1uxzG.jpg',
-            'https://iili.io/qf1AL8P.jpg'
-        ];
-
-        // ============================================
-        // PRIVACY POLICY CHECK
-        // ============================================
-        function checkPrivacyAcceptance() {
-            const accepted = localStorage.getItem('privacyAccepted');
-            if (!accepted) {
-                document.getElementById('privacyOverlay').style.display = 'flex';
-                document.getElementById('appContainer').style.display = 'none';
-            } else {
-                document.getElementById('privacyOverlay').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'block';
-                initializeApp();
-            }
-        }
-
-        document.getElementById('acceptPrivacyBtn').addEventListener('click', () => {
-            localStorage.setItem('privacyAccepted', 'true');
-            document.getElementById('privacyOverlay').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'block';
-            initializeApp();
-        });
-
-        // ============================================
-        // AUTH STATE
+        // AUTH STATE MANAGEMENT
         // ============================================
         let currentUser = null;
+        let selectedAvatar = null;
 
+        // Listen for auth state changes
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Get user profile from Firestore
+                // User is signed in
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
                 if (userDoc.exists()) {
                     currentUser = {
@@ -1078,213 +1662,296 @@
                         email: user.email,
                         ...userDoc.data()
                     };
+                    updateUIForLoggedInUser();
+                    
+                    // Pre-fill newsletter email
+                    document.getElementById('newsletterEmail').value = user.email;
                 }
             } else {
+                // User is signed out
                 currentUser = null;
+                updateUIForLoggedOutUser();
             }
-            updateProfileDropdown();
-            updateNewsletter();
         });
 
-        // ============================================
-        // PROFILE DROPDOWN
-        // ============================================
-        const profileIcon = document.getElementById('profileIcon');
-        const profileDropdown = document.getElementById('profileDropdown');
-
-        profileIcon.addEventListener('click', (e) => {
-            e.stopPropagation();
-            profileDropdown.classList.toggle('show');
-        });
-
-        document.addEventListener('click', () => {
-            profileDropdown.classList.remove('show');
-        });
-
-        function updateProfileDropdown() {
+        function updateUIForLoggedInUser() {
+            const profileIcon = document.getElementById('profileIcon');
+            const profileDropdown = document.getElementById('profileDropdown');
+            
             if (currentUser) {
-                profileIcon.innerHTML = `<img src="${currentUser.avatar}" alt="avatar">`;
-                profileDropdown.innerHTML = `
-                    <div class="dropdown-user-info">
-                        <div class="dropdown-avatar">
-                            <img src="${currentUser.avatar}" alt="avatar">
-                        </div>
-                        <div class="dropdown-user-details">
-                            <div class="dropdown-username">${currentUser.username}</div>
-                            <div class="dropdown-email">${currentUser.email}</div>
-                        </div>
-                    </div>
-                    <div class="dropdown-item" onclick="logout()">
-                        <i class="ph ph-sign-out"></i>
-                        <span>Logout</span>
-                    </div>
-                `;
-            } else {
-                profileIcon.innerHTML = '<i class="ph ph-user"></i>';
-                profileDropdown.innerHTML = `
-                    <div class="dropdown-item" onclick="showSignup()">
-                        <i class="ph ph-user-plus"></i>
-                        <span>Sign Up</span>
-                    </div>
-                    <div class="dropdown-item" onclick="showLogin()">
-                        <i class="ph ph-sign-in"></i>
-                        <span>Login</span>
-                    </div>
-                `;
+                // Update profile icon
+                profileIcon.innerHTML = `<img src="${currentUser.avatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+                profileIcon.classList.add('logged-in');
+                
+                // Update dropdown
+                document.getElementById('profileAvatar').src = currentUser.avatar;
+                document.getElementById('profileUsername').textContent = currentUser.username;
+                document.getElementById('profileEmail').textContent = currentUser.email;
+                document.getElementById('profileBadge').textContent = '📧 Newsletter Subscribed';
             }
         }
 
-        // ============================================
-        // AUTH POPUPS
-        // ============================================
-        window.showSignup = function() {
-            closeAuthPopups();
-            document.getElementById('signupPopup').classList.add('show');
-            renderAvatars();
-        };
-
-        window.showLogin = function() {
-            closeAuthPopups();
-            document.getElementById('loginPopup').classList.add('show');
-        };
-
-        window.closeAuthPopups = function() {
-            document.getElementById('signupPopup').classList.remove('show');
-            document.getElementById('loginPopup').classList.remove('show');
-            document.getElementById('signupError').textContent = '';
-            document.getElementById('loginError').textContent = '';
-        };
-
-        function renderAvatars() {
-            const avatarGrid = document.getElementById('avatarGrid');
-            avatarGrid.innerHTML = avatarList.map((url, index) => `
-                <div class="avatar-option ${index === 0 ? 'selected' : ''}" onclick="selectAvatar(${index})">
-                    <img src="${url}" alt="avatar ${index + 1}">
-                </div>
-            `).join('');
+        function updateUIForLoggedOutUser() {
+            const profileIcon = document.getElementById('profileIcon');
+            profileIcon.innerHTML = '<i class="ph ph-user"></i>';
+            profileIcon.classList.remove('logged-in');
+            
+            // Hide dropdown if open
+            document.getElementById('profileDropdown').classList.remove('show');
+            
+            // Clear newsletter email
+            document.getElementById('newsletterEmail').value = '';
         }
 
-        let selectedAvatar = 0;
-
-        window.selectAvatar = function(index) {
-            selectedAvatar = index;
-            document.querySelectorAll('.avatar-option').forEach((opt, i) => {
-                if (i === index) {
-                    opt.classList.add('selected');
-                } else {
-                    opt.classList.remove('selected');
-                }
-            });
+        // ============================================
+        // AUTH FUNCTIONS
+        // ============================================
+        window.selectAvatar = function(avatarUrl) {
+            selectedAvatar = avatarUrl;
+            document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
         };
 
-        // Username and password character counters
-        document.getElementById('signupUsername').addEventListener('input', (e) => {
-            document.getElementById('usernameCount').textContent = e.target.value.length;
-        });
-
-        document.getElementById('signupPassword').addEventListener('input', (e) => {
-            document.getElementById('passwordCount').textContent = e.target.value.length;
-        });
-
-        // ============================================
-        // HANDLE SIGNUP
-        // ============================================
         window.handleSignup = async function() {
+            // Clear previous errors
+            clearErrors();
+            
+            // Get values
             const username = document.getElementById('signupUsername').value.trim();
             const email = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
-            const errorDiv = document.getElementById('signupError');
-
-            // Validation
-            if (!username || username.length > 9) {
-                errorDiv.textContent = 'Username must be 1-9 characters';
-                return;
+            
+            // Validate
+            let isValid = true;
+            
+            if (!selectedAvatar) {
+                showError('usernameError', 'Please select an avatar');
+                isValid = false;
             }
-            if (!email || !email.includes('@')) {
-                errorDiv.textContent = 'Please enter a valid email';
-                return;
+            
+            if (!username) {
+                showError('usernameError', 'Username is required');
+                isValid = false;
+            } else if (username.length > 9) {
+                showError('usernameError', 'Username must be max 9 characters');
+                isValid = false;
             }
-            if (!password || password.length < 3 || password.length > 8) {
-                errorDiv.textContent = 'Password must be 3-8 characters';
-                return;
+            
+            if (!email) {
+                showError('signupEmailError', 'Email is required');
+                isValid = false;
+            } else if (!isValidEmail(email)) {
+                showError('signupEmailError', 'Please enter a valid email');
+                isValid = false;
             }
-
+            
+            if (!password) {
+                showError('signupPasswordError', 'Password is required');
+                isValid = false;
+            } else if (password.length < 3 || password.length > 8) {
+                showError('signupPasswordError', 'Password must be 3-8 characters');
+                isValid = false;
+            }
+            
+            if (!isValid) return;
+            
+            // Disable button
+            const btn = document.getElementById('signupBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+            
             try {
                 // Create user in Firebase Auth
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
-
+                
                 // Save user profile to Firestore
                 await setDoc(doc(db, 'users', user.uid), {
                     username: username,
                     email: email,
-                    avatar: avatarList[selectedAvatar],
-                    createdAt: new Date().toISOString(),
-                    subscribed: true
+                    avatar: selectedAvatar,
+                    newsletterSubscribed: true,
+                    createdAt: new Date(),
+                    avatarPermanent: true // Flag to indicate avatar cannot be changed
                 });
-
-                closeAuthPopups();
+                
+                // Auto-subscribe to newsletter
+                await setDoc(doc(db, 'newsletter', user.uid), {
+                    email: email,
+                    subscribedAt: new Date(),
+                    userId: user.uid
+                });
+                
+                // Close popup and show success
+                document.getElementById('authPopup').classList.remove('show');
+                showPopup('Welcome!', `Account created successfully, ${username}!`);
+                
             } catch (error) {
-                errorDiv.textContent = error.message;
+                console.error('Signup error:', error);
+                let message = 'Failed to create account';
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    message = 'This email is already registered';
+                } else if (error.code === 'auth/weak-password') {
+                    message = 'Password is too weak';
+                } else if (error.code === 'auth/invalid-email') {
+                    message = 'Invalid email address';
+                }
+                
+                showError('signupEmailError', message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
             }
         };
 
-        // ============================================
-        // HANDLE LOGIN
-        // ============================================
         window.handleLogin = async function() {
+            // Clear previous errors
+            document.getElementById('loginEmailError').textContent = '';
+            document.getElementById('loginPasswordError').textContent = '';
+            
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
-            const errorDiv = document.getElementById('loginError');
-
+            
             if (!email || !password) {
-                errorDiv.textContent = 'Please enter email and password';
+                if (!email) document.getElementById('loginEmailError').textContent = 'Email required';
+                if (!password) document.getElementById('loginPasswordError').textContent = 'Password required';
                 return;
             }
-
+            
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+            
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                closeAuthPopups();
+                document.getElementById('authPopup').classList.remove('show');
+                showPopup('Welcome Back!', 'Successfully logged in!');
             } catch (error) {
-                errorDiv.textContent = 'Invalid email or password';
+                console.error('Login error:', error);
+                let message = 'Invalid email or password';
+                
+                if (error.code === 'auth/user-not-found') {
+                    message = 'No account found with this email';
+                } else if (error.code === 'auth/wrong-password') {
+                    message = 'Incorrect password';
+                } else if (error.code === 'auth/too-many-requests') {
+                    message = 'Too many failed attempts. Try again later';
+                }
+                
+                document.getElementById('loginEmailError').textContent = message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Log In';
             }
         };
 
-        // ============================================
-        // LOGOUT
-        // ============================================
-        window.logout = async function() {
-            await signOut(auth);
-            profileDropdown.classList.remove('show');
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+                document.getElementById('profileDropdown').classList.remove('show');
+                showPopup('Logged Out', 'You have been successfully logged out');
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
         };
 
-        // ============================================
-        // NEWSLETTER
-        // ============================================
-        function updateNewsletter() {
-            const emailInput = document.getElementById('newsletterEmail');
-            const subscribeBtn = document.getElementById('subscribeBtn');
-            const statusDiv = document.getElementById('newsletterStatus');
-
+        window.handleNewsletterSubscribe = function() {
+            const email = document.getElementById('newsletterEmail').value.trim();
+            
+            if (!email) {
+                showPopup('Newsletter', 'Please enter your email address');
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                showPopup('Newsletter', 'Please enter a valid email address');
+                return;
+            }
+            
             if (currentUser) {
-                emailInput.value = currentUser.email;
-                emailInput.disabled = true;
-                subscribeBtn.textContent = 'Subscribed ✓';
-                subscribeBtn.disabled = true;
-                statusDiv.className = 'newsletter-status success';
-                statusDiv.textContent = `Subscribed as ${currentUser.email}`;
+                showPopup('Subscribed!', 'You are already subscribed to our newsletter!');
             } else {
-                emailInput.value = '';
-                emailInput.disabled = true;
-                subscribeBtn.textContent = 'Login to Subscribe';
-                subscribeBtn.disabled = true;
-                statusDiv.className = '';
-                statusDiv.textContent = '';
+                // Open signup popup with email pre-filled
+                document.getElementById('authPopup').classList.add('show');
+                switchAuthTab('signup');
+                document.getElementById('signupEmail').value = email;
             }
+        };
+
+        // ============================================
+        // UI HELPERS
+        // ============================================
+        window.switchAuthTab = function(tab) {
+            const loginTab = document.getElementById('loginTab');
+            const signupTab = document.getElementById('signupTab');
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            
+            if (tab === 'login') {
+                loginTab.classList.add('active');
+                signupTab.classList.remove('active');
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                clearErrors();
+            } else {
+                signupTab.classList.add('active');
+                loginTab.classList.remove('active');
+                signupForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                clearErrors();
+            }
+        };
+
+        function clearErrors() {
+            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
         }
 
+        function showError(elementId, message) {
+            document.getElementById(elementId).textContent = message;
+        }
+
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        // Profile dropdown toggle
+        document.getElementById('profileIcon').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const dropdown = document.getElementById('profileDropdown');
+            
+            if (currentUser) {
+                dropdown.classList.toggle('show');
+            } else {
+                // Show auth popup
+                document.getElementById('authPopup').classList.add('show');
+                switchAuthTab('login');
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('profileDropdown');
+            const profileIcon = document.getElementById('profileIcon');
+            
+            if (!profileIcon.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Auth popup close
+        document.getElementById('closeAuth').addEventListener('click', () => {
+            document.getElementById('authPopup').classList.remove('show');
+        });
+
+        document.getElementById('authPopup').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('authPopup')) {
+                document.getElementById('authPopup').classList.remove('show');
+            }
+        });
+
         // ============================================
-        // APP STATE (Your existing app code continues here)
+        // APP STATE (existing code continues below)
         // ============================================
         let currentPage = 'home';
         let allPosts = [];
@@ -1507,6 +2174,7 @@
                         const data = await response.json();
                         
                         if (data.status === 'ok' && data.items) {
+                            // Keeping at 10 due to API limitations
                             const articles = data.items.slice(0, 10).map(item => {
                                 let image = item.thumbnail || '';
                                 if (!image && item.description) {
@@ -1629,7 +2297,7 @@
                 if (page === 'explore') loadExplorePage();
                 else if (page === 'markets') loadMarketsPage();
                 else if (page === 'play') { window.open('https://example.com', '_blank'); navigateTo('home'); }
-                else if (page === 'menu') { showComingSoon('Menu'); navigateTo('home'); }
+                else if (page === 'menu') { showPopup('Menu', 'Coming soon!'); navigateTo('home'); }
             }
         };
 
@@ -2274,8 +2942,10 @@
             }
         }
 
-        function showComingSoon(feature) {
-            alert(`${feature} feature coming soon!`);
+        window.showPopup = function(title, message) {
+            document.getElementById('popupTitle').textContent = title;
+            document.getElementById('popupMessage').textContent = message;
+            document.getElementById('popup').classList.add('show');
         }
 
         function setupEventListeners() {
@@ -2286,23 +2956,20 @@
                 document.getElementById('scrollableContent').scrollTo({ top: 0, behavior: 'smooth' });
             });
             
-            document.getElementById('appStoreBtn')?.addEventListener('click', () => showComingSoon('iOS App'));
-            document.getElementById('playStoreBtn')?.addEventListener('click', () => showComingSoon('Android App'));
-            document.getElementById('aboutLink')?.addEventListener('click', () => showComingSoon('About'));
-            document.getElementById('privacyLink')?.addEventListener('click', () => showComingSoon('Privacy'));
-            document.getElementById('termsLink')?.addEventListener('click', () => showComingSoon('Terms'));
-            document.getElementById('contactLink')?.addEventListener('click', () => showComingSoon('Contact'));
+            document.getElementById('closePopup')?.addEventListener('click', () => {
+                document.getElementById('popup').classList.remove('show');
+            });
+            document.getElementById('popup')?.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('popup')) {
+                    document.getElementById('popup').classList.remove('show');
+                }
+            });
         }
 
-        function initializeApp() {
-            renderTrending();
-            setupEventListeners();
-            updateTopNavigation('home');
-            navigateTo('home');
-        }
-
-        // Start the app
-        checkPrivacyAcceptance();
+        renderTrending();
+        setupEventListeners();
+        updateTopNavigation('home');
+        navigateTo('home');
     </script>
 </body>
 </html>
