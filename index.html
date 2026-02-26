@@ -1498,7 +1498,7 @@
                         const data = await response.json();
                         
                         if (data.status === 'ok' && data.items) {
-                            // 🔥 CHANGED FROM 10 TO 20 🔥
+                            // 🔥 HOME PAGE: 20 articles from each feed
                             const articles = data.items.slice(0, 20).map(item => {
                                 let image = item.thumbnail || '';
                                 if (!image && item.description) {
@@ -2074,7 +2074,8 @@
 
         function renderExploreContent(category, searchTerm = '') {
             if (category === 'all') {
-                const rssArticles = allRssPosts.slice(0, 10).map(post => ({
+                // 🔥 EXPLORE PAGE: Show 20 RSS articles
+                const rssArticles = allRssPosts.slice(0, 20).map(post => ({
                     ...post,
                     exploreType: 'rss'
                 }));
