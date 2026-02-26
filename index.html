@@ -399,14 +399,33 @@
             content: "";
             margin-top: 5px;
         }
-        .featured-content a {
-            color: #fab005;
+
+        /* FIXED LINK COLORS - Force gold color for all link states */
+        .featured-content a,
+        .news-item-content a,
+        .post-content-container a,
+        .featured-content a:link,
+        .news-item-content a:link,
+        .post-content-container a:link,
+        .featured-content a:visited,
+        .news-item-content a:visited,
+        .post-content-container a:visited,
+        .featured-content a:active,
+        .news-item-content a:active,
+        .post-content-container a:active {
+            color: #fab005 !important;
             text-decoration: none;
             border-bottom: 1px dotted #fab005;
         }
-        .featured-content a:hover {
+
+        .featured-content a:hover,
+        .news-item-content a:hover,
+        .post-content-container a:hover {
+            color: #fab005 !important;
             opacity: 0.8;
+            border-bottom: 1px solid #fab005;
         }
+
         .read-more-btn {
             background: none;
             border: none;
@@ -514,6 +533,18 @@
         .video-description p:last-child {
             margin-bottom: 0;
         }
+        .video-description a {
+            color: #fab005 !important;
+            text-decoration: none;
+            border-bottom: 1px dotted #fab005;
+        }
+        .video-description a:hover {
+            opacity: 0.8;
+            border-bottom: 1px solid #fab005;
+        }
+        .video-description a:visited {
+            color: #fab005 !important;
+        }
 
         /* News List */
         .news-list { 
@@ -588,14 +619,6 @@
             display: block;
             content: "";
             margin-top: 3px;
-        }
-        .news-item-content a {
-            color: #fab005;
-            text-decoration: none;
-            border-bottom: 1px dotted #fab005;
-        }
-        .news-item-content a:hover {
-            opacity: 0.8;
         }
 
         /* Load More Button */
@@ -781,6 +804,10 @@
         }
         .explore-url i {
             font-size: 0.9rem;
+        }
+        .explore-url a {
+            color: #fab005;
+            text-decoration: none;
         }
 
         /* Markets Page */
