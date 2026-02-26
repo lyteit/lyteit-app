@@ -98,26 +98,19 @@
         }
 
         .accept-btn {
-            background: #1e2128;
-            color: #8a8d91;
-            border: 1px solid #333;
+            background: #fab005;
+            color: #000;
+            border: 1px solid #fab005;
             padding: 15px 30px;
             border-radius: 30px;
             font-weight: 600;
             font-size: 1rem;
-            cursor: not-allowed;
+            cursor: pointer;
             width: 100%;
             transition: all 0.2s ease;
         }
 
-        .accept-btn.enabled {
-            background: #fab005;
-            color: #000;
-            border-color: #fab005;
-            cursor: pointer;
-        }
-
-        .accept-btn.enabled:hover {
+        .accept-btn:hover {
             opacity: 0.9;
         }
 
@@ -478,7 +471,6 @@
             margin-top: 5px;
         }
 
-        /* Rest of your existing styles remain the same */
         .search-container {
             padding: 0 20px 10px 20px;
             max-width: 1200px;
@@ -800,7 +792,7 @@
             Website: https://lyteit.com</p>
             
             <div class="privacy-footer">
-                <button class="accept-btn" id="acceptPrivacyBtn" disabled>Please scroll to read full policy</button>
+                <button class="accept-btn" id="acceptPrivacyBtn">Accept & Continue</button>
             </div>
         </div>
     </div>
@@ -1064,29 +1056,11 @@
             }
         }
 
-        // Privacy policy scroll detection
-        const privacyCard = document.getElementById('privacyCard');
-        const acceptBtn = document.getElementById('acceptPrivacyBtn');
-
-        privacyCard.addEventListener('scroll', () => {
-            const scrollTop = privacyCard.scrollTop;
-            const scrollHeight = privacyCard.scrollHeight;
-            const clientHeight = privacyCard.clientHeight;
-            
-            if (scrollTop + clientHeight >= scrollHeight - 10) {
-                acceptBtn.classList.add('enabled');
-                acceptBtn.disabled = false;
-                acceptBtn.textContent = 'Accept & Continue';
-            }
-        });
-
-        acceptBtn.addEventListener('click', () => {
-            if (acceptBtn.classList.contains('enabled')) {
-                localStorage.setItem('privacyAccepted', 'true');
-                document.getElementById('privacyOverlay').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'block';
-                initializeApp();
-            }
+        document.getElementById('acceptPrivacyBtn').addEventListener('click', () => {
+            localStorage.setItem('privacyAccepted', 'true');
+            document.getElementById('privacyOverlay').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            initializeApp();
         });
 
         // ============================================
