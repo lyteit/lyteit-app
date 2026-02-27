@@ -294,25 +294,30 @@
             background: rgba(250, 176, 5, 0.05);
         }
         
-        .video-card.ad-card {
-            border-left: 2px solid #fab005;
-        }
-        
         .ad-button {
             display: inline-block;
             background: #fab005;
-            color: #000;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 0.75rem;
+            color: #000 !important;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.8rem;
             font-weight: 600;
             text-decoration: none;
-            margin-top: 8px;
-            transition: opacity 0.2s ease;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
         }
         
         .ad-button:hover {
             opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(250, 176, 5, 0.3);
+        }
+        
+        .ad-button i {
+            margin-left: 5px;
+            font-size: 0.9rem;
         }
         
         /* Popup Ad */
@@ -322,7 +327,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -340,7 +345,7 @@
         .popup-ad-container {
             background: #15171a;
             border-radius: 24px;
-            padding: 30px;
+            padding: 35px;
             max-width: 450px;
             width: 90%;
             max-height: 90vh;
@@ -386,103 +391,142 @@
         
         .popup-ad-countdown {
             text-align: center;
-            margin: 15px 0;
+            margin: 20px 0 0;
             color: #8a8d91;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
+            padding-top: 15px;
+            border-top: 1px solid #333;
         }
         
         .popup-ad-countdown span {
             color: #fab005;
             font-weight: 600;
+            font-size: 1.1rem;
         }
         
         .popup-ad-badge {
             background: #fab00520;
             color: #fab005;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
+            padding: 6px 15px;
+            border-radius: 30px;
+            font-size: 0.8rem;
             display: inline-block;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .popup-ad-badge i {
+            margin-right: 5px;
         }
         
         .popup-ad-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            line-height: 1.3;
         }
         
         .popup-ad-description {
             color: #8a8d91;
             line-height: 1.6;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
         }
         
         .popup-ad-image {
             width: 100%;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .popup-ad-video {
-            width: 100%;
-            aspect-ratio: 16/9;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .popup-ad-video iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            border-radius: 12px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            border: 1px solid #333;
         }
         
         .popup-ad-button {
             background: #fab005;
-            color: #000;
+            color: #000 !important;
             border: none;
-            padding: 14px 30px;
-            border-radius: 30px;
-            font-weight: 600;
+            padding: 15px 30px;
+            border-radius: 40px;
+            font-weight: 700;
             cursor: pointer;
             width: 100%;
             font-size: 1rem;
             text-decoration: none;
             display: inline-block;
             text-align: center;
-            transition: opacity 0.2s ease;
+            transition: all 0.2s ease;
         }
         
         .popup-ad-button:hover {
             opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(250, 176, 5, 0.4);
         }
         
-        /* Direct Link Ad */
-        .direct-ad-container {
-            margin: 20px 0;
-            padding: 20px;
-            background: #15171a;
-            border: 1px solid #fab005;
-            border-radius: 16px;
+        /* Direct Link Ad Modal */
+        .direct-modal {
             text-align: center;
         }
         
-        .direct-ad-link {
+        .direct-modal .popup-icon {
+            font-size: 3rem;
             color: #fab005;
-            text-decoration: none;
+            margin-bottom: 15px;
+        }
+        
+        .direct-modal .popup-title {
+            font-size: 1.3rem;
             font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
+            margin-bottom: 10px;
+        }
+        
+        .direct-modal .popup-message {
+            color: #8a8d91;
+            margin-bottom: 20px;
+        }
+        
+        .direct-countdown {
             background: #1e2128;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 1.1rem;
+        }
+        
+        .direct-countdown span {
+            color: #fab005;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+        
+        .direct-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .direct-btn {
+            flex: 1;
+            padding: 12px;
             border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
             transition: all 0.2s ease;
         }
         
-        .direct-ad-link:hover {
-            background: #2a2f38;
+        .direct-btn.primary {
+            background: #fab005;
+            color: #000;
+        }
+        
+        .direct-btn.secondary {
+            background: #1e2128;
+            color: #fff;
+            border: 1px solid #333;
+        }
+        
+        .direct-btn:hover {
+            opacity: 0.9;
             transform: translateY(-2px);
         }
 
@@ -1118,7 +1162,7 @@
             background: #15171a;
             border-radius: 20px;
             padding: 30px;
-            max-width: 350px;
+            max-width: 400px;
             width: 90%;
             text-align: center;
             border: 1px solid #444;
@@ -1305,13 +1349,16 @@
 
         <!-- Direct Link Ad Modal -->
         <div class="popup-overlay" id="directLinkModal">
-            <div class="popup-content">
+            <div class="popup-content direct-modal">
                 <div class="popup-icon"><i class="ph ph-link"></i></div>
-                <div class="popup-title">Leaving lyteit.com</div>
-                <div class="popup-message" id="directLinkMessage">You are being redirected to an external site.</div>
-                <div class="popup-actions" style="flex-direction: column; gap: 10px;">
-                    <button class="popup-button" id="confirmRedirect" style="background: #fab005;">Continue</button>
-                    <button class="popup-btn cancel" id="cancelRedirect">Stay Here</button>
+                <div class="popup-title">Sponsored Redirect</div>
+                <div class="popup-message" id="directLinkMessage">You'll be redirected to our sponsor's website</div>
+                <div class="direct-countdown">
+                    Redirecting in <span id="directCountdown">10</span> seconds
+                </div>
+                <div class="direct-buttons">
+                    <button class="direct-btn secondary" id="cancelDirect">Cancel</button>
+                    <button class="direct-btn primary" id="proceedDirect">Proceed Now</button>
                 </div>
             </div>
         </div>
@@ -1481,9 +1528,10 @@
         let allAds = [];
         let searchTerm = '';
         
-        let displayedItems = []; // Mix of posts and native ads
+        let displayedItems = [];
         let currentDisplayCount = 0;
         const POSTS_PER_BATCH = 3;
+        const ADS_FREQUENCY = 5; // Show native ad every 5 posts
         let featuredPost = null;
 
         let isSearching = false;
@@ -1493,18 +1541,23 @@
         let exploreCategory = 'all';
         let currentPopupAd = null;
         let popupCountdown = null;
-        let redirectUrl = null;
+        let directCountdown = null;
+        let currentDirectAd = null;
+        let pageLoadTime = Date.now();
 
         const postCache = new Map();
         const CACHE_DURATION = 5 * 60 * 1000;
 
-        // Visit tracking for popup ads (1st and 5th visit)
+        // Visit tracking for ads (every 5th visit)
         const VISIT_KEY = 'lyteit_visits';
-        let visitCount = parseInt(localStorage.getItem(VISIT_KEY) || '0');
+        const LAST_POPUP_KEY = 'lyteit_last_popup';
+        const LAST_DIRECT_KEY = 'lyteit_last_direct';
         
-        // Increment visit count on page load
+        let visitCount = parseInt(localStorage.getItem(VISIT_KEY) || '0');
         visitCount++;
         localStorage.setItem(VISIT_KEY, visitCount);
+        
+        console.log(`Visit #${visitCount}`);
 
         const RSS_FEEDS = [
             {
@@ -1597,12 +1650,6 @@
             { topic: "NGX All Share", icon: "ph-trend-up" }
         ];
 
-        // Social media links (to be updated later)
-        const socialLinks = {
-            youtube: '#',
-            x: '#'
-        };
-
         // ============================================
         // AD FUNCTIONS
         // ============================================
@@ -1633,14 +1680,25 @@
                     // Check click limits
                     if (ad.maxClicks > 0 && (ad.clicks || 0) >= ad.maxClicks) return false;
                     
+                    // Filter out video popup ads
+                    if (ad.type === 'popup' && ad.popupType === 'video') return false;
+                    
                     return true;
                 });
                 
                 console.log(`Loaded ${allAds.length} active ads`);
                 
-                // Check if we should show a popup ad (1st or 5th visit)
-                if (visitCount === 1 || visitCount === 5) {
-                    showRandomPopupAd();
+                // Check if we should show ads (every 5th visit)
+                if (visitCount % 5 === 0) {
+                    console.log('5th visit detected - checking for ads');
+                    
+                    // Check for direct link ad (after 10 seconds)
+                    setTimeout(() => {
+                        checkAndShowDirectAd();
+                    }, 10000);
+                    
+                    // Check for popup ad
+                    checkAndShowPopupAd();
                 }
                 
             } catch (error) {
@@ -1648,15 +1706,50 @@
             }
         }
 
-        function showRandomPopupAd() {
-            const popupAds = allAds.filter(ad => ad.type === 'popup');
+        function checkAndShowPopupAd() {
+            // Check if we've shown a popup recently (within 7 days)
+            const lastPopup = localStorage.getItem(LAST_POPUP_KEY);
+            const now = Date.now();
+            
+            if (lastPopup && (now - parseInt(lastPopup)) < 7 * 24 * 60 * 60 * 1000) {
+                console.log('Popup shown recently, skipping');
+                return;
+            }
+            
+            const popupAds = allAds.filter(ad => ad.type === 'popup' && ad.popupType !== 'video');
             if (popupAds.length === 0) return;
             
             // Pick random popup ad
             const randomIndex = Math.floor(Math.random() * popupAds.length);
             const ad = popupAds[randomIndex];
             
+            // Store last popup time
+            localStorage.setItem(LAST_POPUP_KEY, now.toString());
+            
             showPopupAd(ad);
+        }
+
+        function checkAndShowDirectAd() {
+            // Check if we've shown a direct ad recently (within 7 days)
+            const lastDirect = localStorage.getItem(LAST_DIRECT_KEY);
+            const now = Date.now();
+            
+            if (lastDirect && (now - parseInt(lastDirect)) < 7 * 24 * 60 * 60 * 1000) {
+                console.log('Direct ad shown recently, skipping');
+                return;
+            }
+            
+            const directAds = allAds.filter(ad => ad.type === 'direct');
+            if (directAds.length === 0) return;
+            
+            // Pick random direct ad
+            const randomIndex = Math.floor(Math.random() * directAds.length);
+            const ad = directAds[randomIndex];
+            
+            // Store last direct ad time
+            localStorage.setItem(LAST_DIRECT_KEY, now.toString());
+            
+            showDirectAd(ad);
         }
 
         function showPopupAd(ad) {
@@ -1682,14 +1775,6 @@
                 html = `
                     <div class="popup-ad-title">${ad.title}</div>
                     <img src="${ad.image}" class="popup-ad-image" alt="${ad.title}">
-                    <div class="popup-ad-description">${ad.description}</div>
-                `;
-            } else if (ad.popupType === 'video') {
-                html = `
-                    <div class="popup-ad-title">${ad.title}</div>
-                    <div class="popup-ad-video">
-                        <iframe src="https://www.youtube.com/embed/${ad.videoId}?autoplay=1" frameborder="0" allowfullscreen></iframe>
-                    </div>
                     <div class="popup-ad-description">${ad.description}</div>
                 `;
             }
@@ -1725,7 +1810,45 @@
             }, 1000);
         }
 
+        function showDirectAd(ad) {
+            currentDirectAd = ad;
+            const modal = document.getElementById('directLinkModal');
+            const countdownEl = document.getElementById('directCountdown');
+            const messageEl = document.getElementById('directLinkMessage');
+            
+            // Track impression
+            trackAdImpression(ad.id);
+            
+            messageEl.textContent = `You'll be redirected to ${ad.sponsor}`;
+            modal.classList.add('show');
+            
+            let seconds = 10;
+            countdownEl.textContent = seconds;
+            
+            if (directCountdown) clearInterval(directCountdown);
+            
+            directCountdown = setInterval(() => {
+                seconds--;
+                countdownEl.textContent = seconds;
+                
+                if (seconds <= 0) {
+                    clearInterval(directCountdown);
+                    redirectToDirectAd();
+                }
+            }, 1000);
+        }
+
+        function redirectToDirectAd() {
+            if (currentDirectAd) {
+                trackAdClick(currentDirectAd.id);
+                window.open(currentDirectAd.redirectUrl, '_blank');
+                document.getElementById('directLinkModal').classList.remove('show');
+                currentDirectAd = null;
+            }
+        }
+
         window.trackAdClick = async function(adId, event) {
+            if (event) event.preventDefault();
             try {
                 const adRef = doc(db, 'ads', adId);
                 await updateDoc(adRef, {
@@ -1760,7 +1883,7 @@
 
         function renderNativeAd(ad) {
             return `
-                <div class="news-item ad-item" id="ad-${ad.id}" onclick="handleAdClick('${ad.id}', '${ad.buttonLink}', event)">
+                <div class="news-item ad-item" id="ad-${ad.id}">
                     <div class="ad-badge">
                         <i class="ph ph-megaphone"></i> Sponsored
                     </div>
@@ -1783,30 +1906,6 @@
                 </div>
             `;
         }
-
-        window.handleAdClick = function(adId, url, event) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            if (url) {
-                trackAdClick(adId, event);
-                window.open(url, '_blank');
-            }
-        };
-
-        // Close popup ad
-        document.getElementById('popupAdClose').addEventListener('click', () => {
-            document.getElementById('popupAdOverlay').classList.remove('show');
-            if (popupCountdown) clearInterval(popupCountdown);
-        });
-
-        // Close on overlay click
-        document.getElementById('popupAdOverlay').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('popupAdOverlay')) {
-                document.getElementById('popupAdOverlay').classList.remove('show');
-                if (popupCountdown) clearInterval(popupCountdown);
-            }
-        });
 
         // ============================================
         // UTILITY FUNCTIONS
@@ -2094,13 +2193,16 @@
                 // Filter out featured post from main list
                 const regularPosts = allPosts.filter(p => p.id !== featuredPost.id);
                 
-                // Mix in native ads every 3 posts
+                // Mix in native ads every 5th post
                 displayedItems = [];
+                let postCount = 0;
+                
                 for (let i = 0; i < regularPosts.length; i++) {
                     displayedItems.push(regularPosts[i]);
+                    postCount++;
                     
-                    // Insert an ad after every 3 posts
-                    if ((i + 1) % 3 === 0) {
+                    // Insert an ad after every 5th post
+                    if (postCount % ADS_FREQUENCY === 0) {
                         const nativeAds = getNativeAds(1);
                         if (nativeAds.length > 0) {
                             displayedItems.push({ ...nativeAds[0], isAd: true });
@@ -2765,17 +2867,36 @@
                 }
             });
 
-            // Direct link modal handlers
-            document.getElementById('cancelRedirect')?.addEventListener('click', () => {
-                document.getElementById('directLinkModal').classList.remove('show');
-                redirectUrl = null;
+            // Close popup ad
+            document.getElementById('popupAdClose').addEventListener('click', () => {
+                document.getElementById('popupAdOverlay').classList.remove('show');
+                if (popupCountdown) clearInterval(popupCountdown);
             });
 
-            document.getElementById('confirmRedirect')?.addEventListener('click', () => {
-                if (redirectUrl) {
-                    window.open(redirectUrl, '_blank');
+            document.getElementById('popupAdOverlay').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('popupAdOverlay')) {
+                    document.getElementById('popupAdOverlay').classList.remove('show');
+                    if (popupCountdown) clearInterval(popupCountdown);
+                }
+            });
+
+            // Direct link modal handlers
+            document.getElementById('cancelDirect')?.addEventListener('click', () => {
+                document.getElementById('directLinkModal').classList.remove('show');
+                if (directCountdown) clearInterval(directCountdown);
+                currentDirectAd = null;
+            });
+
+            document.getElementById('proceedDirect')?.addEventListener('click', () => {
+                if (directCountdown) clearInterval(directCountdown);
+                redirectToDirectAd();
+            });
+
+            document.getElementById('directLinkModal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('directLinkModal')) {
                     document.getElementById('directLinkModal').classList.remove('show');
-                    redirectUrl = null;
+                    if (directCountdown) clearInterval(directCountdown);
+                    currentDirectAd = null;
                 }
             });
         }
